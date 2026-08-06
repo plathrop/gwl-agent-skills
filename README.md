@@ -9,6 +9,7 @@ rationale and usage docs).
 | Skill | Description |
 |-------|-------------|
 | [multi-review](multi-review/) | Parallel multi-model code review pipeline with conflict resolution and feedback triage |
+| [pebble](pebble/) | Work protocol for the Pebble (`pb`) local issue tracker — claim, track, and close issues while coding |
 
 ## Installation
 
