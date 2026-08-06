@@ -35,7 +35,7 @@ At the start of a task, find out what there is to work on:
 
 ```bash
 pb ready                 # issues with no open blockers (the work queue)
-pb list -s in_progress   # work already claimed (possibly by you earlier)
+pb list --status in_progress   # work already claimed (possibly by you earlier)
 pb blocked -v            # what is stuck and why
 pb summary               # epic-level view with child completion counts
 ```
@@ -73,11 +73,16 @@ decision, hit a blocker, or hand off partial work.
 
 ### 4. Close with context
 
-When the work is done and verified:
+When the work is done and verified, close with a `--reason` explaining
+what was done — the reason becomes part of the permanent event log:
 
 ```bash
-pb close <id> -c "Fixed in src/auth/login.tsx; added regression test"
+pb close <id> --reason "Fixed in src/auth/login.tsx; added regression test"
 ```
+
+Always pass `--reason`. If there is more to say (decisions, caveats,
+follow-ups), also add `--comment` — but never close "bare" when you can
+state why in one line.
 
 Close multiple issues at once with `pb close <id1> <id2> ...`.
 
@@ -140,12 +145,12 @@ you can tell where work happened.
 |---------|---------|
 | `pb init` | Initialize `.pebble/` in the current directory |
 | `pb create <title> [-t type] [-p 0-4] [-d desc] [--parent id] [--blocked-by ids]` | New issue |
-| `pb update <id> [--title|--description|-p|-s|--parent]` | Edit fields (not close) |
-| `pb claim <id...>` | Set status `in_progress` |
-| `pb close <id...> [-r reason] [-c comment]` | Close with optional note |
-| `pb reopen <id> [-r reason]` | Reopen closed issue |
-| `pb delete <id...>` / `pb restore <id...>` | Soft delete / restore |
-| `pb list [-t|-s|-p|--parent] [-v] [--flat]` | Filtered listing (tree by default) |
+| `pb update <id> [--title|--description|--priority|--status|--parent]` | Edit fields (not close) |
+| `pb claim <id...>` | Set status `in_progress` (cascades to open parents) |
+| `pb close <id...> [--reason text] [--comment text]` | Close with a recorded reason |
+| `pb reopen <id> [--reason text]` | Reopen closed issue |
+| `pb delete <id...>` / `pb restore <id...>` | Soft delete / restore (`-r` for reason) |
+| `pb list [--status|-t|--priority|--parent] [-v] [--flat] [--limit n]` | Filtered listing (tree by default) |
 | `pb show <id>` | Issue details |
 | `pb ready [-v]` | Work queue — no open blockers |
 | `pb blocked [-v]` | Blocked issues, with reasons |
@@ -153,11 +158,12 @@ you can tell where work happened.
 | `pb dep relate\|unrelate <a> <b>` | Manage related links |
 | `pb dep list <id>` / `pb dep tree <id>` | Inspect dependencies |
 | `pb comments add\|list <id> [text]` | Comments |
-| `pb summary [--include-closed]` | Epic progress overview |
-| `pb history [-n limit]` | Recent activity |
+| `pb summary [--status s] [--limit n]` | Epic progress overview |
+| `pb history [--limit n] [--since 7d]` | Recent activity |
 | `pb search <query>` | Full-text search |
 | `pb graph [--root id]` | ASCII dependency graph |
-| `pb ui [-p port]` | Web UI (default port 3333) |
+| `pb ui [--port n]` | Web UI (default port 3333) |
 
-Global flags: `--pretty` (human output), `--local` (worktree-local
-`.pebble/`), `-h/--help`.
+Global flags: `-P/--pretty` (human output), `--local` (worktree-local
+`.pebble/`), `-h/--help`. Shorthand flags vary per command — check
+`pb <cmd> --help` when unsure.

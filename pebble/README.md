@@ -13,7 +13,7 @@ codes:
 1. **Orient** — check `pb ready` / `pb list` / `pb blocked` to find work
 2. **Claim** — `pb claim <id>` before starting on an issue
 3. **Record** — leave `pb comments` when making decisions or discoveries
-4. **Close** — `pb close <id> -c "<what changed>"` when done
+4. **Close** — `pb close <id> --reason "<what changed>"` when done
 5. **File** — create new issues for work discovered along the way
 
 It also covers work breakdown (epics → tasks → dependencies), the
@@ -58,3 +58,7 @@ Upstream Pebble docs (full source at `~/Source/pebble/`):
 
 - `docs/cli-reference.md` — complete command/flag reference
 - `CLI_EXAMPLES.md` — example commands with sample output
+
+Note: the docs occasionally drift from the shipped CLI (e.g. shorthand
+flags that don't exist). Flag usage in this skill was verified against
+the installed `pb --help` output; when in doubt, trust `pb <cmd> --help`.
