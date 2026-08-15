@@ -159,8 +159,8 @@ pebble with feature branches:
 
 See [WORKTREE-WORKFLOW.md](WORKTREE-WORKFLOW.md) for the full design
 note: the incident history, the measured pb behaviors this relies on,
-and the planned construction backstops (pre-commit hook + merge
-driver).
+and the construction backstops (pre-commit hook + merge driver; install
+with `scripts/setup-worktree-backstops.sh`).
 
 ### Resolving a ledger merge conflict
 

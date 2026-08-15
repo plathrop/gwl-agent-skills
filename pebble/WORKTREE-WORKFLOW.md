@@ -52,7 +52,10 @@ merges stop conflicting on it; stray pebble commands from any worktree
 land in the right place; there is one live view of the ledger, and
 everyone sees it.
 
-## Construction backstops (planned — not yet built)
+## Construction backstops
+
+Installed by `scripts/setup-worktree-backstops.sh` (idempotent; rerun
+per clone and after updating the canonical hook).
 
 - **Pre-commit hook** (versioned via `core.hooksPath=.githooks`):
   reject commits touching `.pebble/issues.jsonl` on any branch but

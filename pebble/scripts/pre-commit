@@ -1,0 +1,25 @@
+#!/bin/sh
+
+ledger='.pebble/issues.jsonl'
+
+if ! git diff --cached --name-only -- "$ledger" | grep -qx "$ledger"; then
+  exit 0
+fi
+
+branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)
+
+if [ "$branch" = "main" ]; then
+  exit 0
+fi
+
+cat >&2 <<'EOF'
+error: refusing to commit .pebble/issues.jsonl outside main.
+
+Pebble's ledger lives in the primary checkout on main. From a feature
+worktree, run `pb` normally (never `--local`) and leave `.pebble` changes
+uncommitted; the primary checkout commits ledger changes from main.
+
+See: pebble/WORKTREE-WORKFLOW.md in the gwl-agent-skills repo
+(~/Source/gwl-agent-skills/pebble/WORKTREE-WORKFLOW.md).
+EOF
+exit 1
