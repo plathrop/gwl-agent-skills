@@ -139,6 +139,29 @@ pb --local create "Experiment-specific task"
 Every event records which worktree it came from (`lastSource` field), so
 you can tell where work happened.
 
+### The branch discipline (house rule, adopted 2026-08-15)
+
+The ledger lives in the working tree, so **feature branches diverge it**
+— events strand on unmerged branches, branch checkouts show stale
+snapshots, and merges textually collide on the JSONL. In repos that use
+pebble with feature branches:
+
+- The **primary checkout rests on main**. Feature work happens in linked
+  worktrees at `~/Source/worktrees/<project>/<feature>`.
+- **Commit `.pebble` changes only from the primary checkout** — commit
+  and push immediately, as usual.
+- `pb` commands from inside a feature worktree are fine and encouraged:
+  they resolve to the primary's live ledger, so every view is the live
+  view. Never pass `--local` in a feature worktree.
+- If the primary checkout is sitting on a feature branch (transition
+  states, old habits), do NOT run pebble mutations there — they will
+  strand on the branch. Switch it back to main first.
+
+See [WORKTREE-WORKFLOW.md](WORKTREE-WORKFLOW.md) for the full design
+note: the incident history, the measured pb behaviors this relies on,
+and the planned construction backstops (pre-commit hook + merge
+driver).
+
 ## Command quick reference
 
 | Command | Purpose |

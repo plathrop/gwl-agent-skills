@@ -37,6 +37,11 @@ multi-worktree behavior.
   events stay well-formed and sourced.
 - **Harness-agnostic.** No subagents, scripts, or harness-specific
   tooling — just the `pb` CLI, so the skill works anywhere.
+- **Branch discipline is a house rule, not a tool feature.** Because the
+  ledger lives in the working tree, feature branches diverge it. The
+  skill prescribes the worktree workflow (primary checkout on main,
+  feature work in linked worktrees) — see
+  [WORKTREE-WORKFLOW.md](WORKTREE-WORKFLOW.md) for the design note.
 
 ## Requirements
 
