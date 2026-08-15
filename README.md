@@ -10,6 +10,7 @@ rationale and usage docs).
 |-------|-------------|
 | [multi-review](multi-review/) | Parallel multi-model code review pipeline with conflict resolution and feedback triage |
 | [pebble](pebble/) | Work protocol for the Pebble (`pb`) local issue tracker — claim, track, and close issues while coding |
+| [pi-interaction](pi-interaction/) | Drive the pi CLI headlessly — not-me code reviews, scoped subagents, JSON-mode observability |
 
 ## Installation
 
