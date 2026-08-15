@@ -62,7 +62,11 @@ everyone sees it.
   `.pebble/issues.jsonl merge=pebble` with driver
   `pb merge %A %B -o %A`. When an accident slips through (or a clone
   lacks hooks), merges reconcile by event-union-with-dedupe instead of
-  line-soup. (Validate event-order assumptions when building it.)
+  line-soup. Event-order assumption validated 2026-08-15 on hearth:
+  `pb merge` emits events sorted by timestamp and dedupes on
+  `issueId-timestamp-type`, so a merged ledger is chronologically
+  ordered with no duplicated shared history. (Manual recipe for
+  conflicts: SKILL.md, "Resolving a ledger merge conflict".)
 
 ## Worktree ergonomics
 
