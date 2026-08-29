@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# gh-app — run `gh` authenticated as the gwl-agents GitHub App.
+#
+# Use this instead of `gh` for anything an agent posts to GitHub
+# (reviews, PR/issue comments, statuses) so the action is attributed to
+# the app, not to the user's personal account.
+#
+#   gh-app pr review 123 --request-changes --body "..."
+#   gh-app pr comment 123 --body "..."
+#   gh-app api repos/OWNER/REPO/pulls/123/reviews -f event=REQUEST_CHANGES -f body="..."
+#
+# Read-only commands (gh pr view, gh pr diff, ...) may use plain `gh`.
+set -euo pipefail
+
+export GH_TOKEN="$(gh-app-token)"
+exec gh "$@"

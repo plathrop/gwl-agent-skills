@@ -8,6 +8,7 @@ rationale and usage docs).
 
 | Skill | Description |
 |-------|-------------|
+| [gh-app](gh-app/) | Post GitHub reviews, comments, and statuses as the `gwl-agents` app instead of the user's account |
 | [multi-review](multi-review/) | Parallel multi-model code review pipeline with conflict resolution and feedback triage |
 | [pebble](pebble/) | Work protocol for the Pebble (`pb`) local issue tracker — claim, track, and close issues while coding |
 | [pi-interaction](pi-interaction/) | Drive the pi CLI headlessly — not-me code reviews, scoped subagents, JSON-mode observability |
