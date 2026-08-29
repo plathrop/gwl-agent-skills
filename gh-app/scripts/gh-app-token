@@ -1,0 +1,126 @@
+#!/usr/bin/env node
+'use strict';
+
+// gh-app-token — mint a GitHub App installation access token for the
+// gwl-agents app, with a short-lived local cache (tokens last ~1 hour).
+//
+// Config (first match wins):
+//   env:  GH_APP_ID, GH_APP_INSTALLATION_ID, GH_APP_PRIVATE_KEY
+//   file: ~/.config/gh-app/config.json
+//     { "app_id": 4608186, "installation_id": 154042224,
+//       "private_key": "/home/grey/.config/gh-app/private-key.pem" }
+//
+// GH_APP_PRIVATE_KEY may be a path to a PEM file or the PEM text itself.
+
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const crypto = require('node:crypto');
+
+const CONFIG_DIR = process.env.GH_APP_CONFIG_DIR || path.join(os.homedir(), '.config', 'gh-app');
+const CACHE_DIR = process.env.GH_APP_CACHE_DIR || path.join(os.homedir(), '.cache', 'gh-app');
+const API = process.env.GH_APP_API_URL || 'https://api.github.com';
+
+function loadConfig() {
+  const cfgPath = path.join(CONFIG_DIR, 'config.json');
+  let cfg = {};
+  if (fs.existsSync(cfgPath)) {
+    try {
+      cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    } catch (e) {
+      console.error(`gh-app-token: could not parse ${cfgPath}: ${e.message}`);
+      process.exit(1);
+    }
+  }
+
+  const appId = process.env.GH_APP_ID || cfg.app_id;
+  const installationId = process.env.GH_APP_INSTALLATION_ID || cfg.installation_id;
+  let privateKey = process.env.GH_APP_PRIVATE_KEY || cfg.private_key;
+
+  if (!appId || !installationId || !privateKey) {
+    console.error('gh-app-token: missing configuration.');
+    console.error(`  expected config file: ${cfgPath}`);
+    console.error('  env overrides: GH_APP_ID, GH_APP_INSTALLATION_ID, GH_APP_PRIVATE_KEY');
+    process.exit(1);
+  }
+
+  // private_key may be a filesystem path or inline PEM text
+  if (!String(privateKey).includes('-----BEGIN')) {
+    try {
+      privateKey = fs.readFileSync(privateKey, 'utf8');
+    } catch (e) {
+      console.error(`gh-app-token: could not read private key: ${e.message}`);
+      process.exit(1);
+    }
+  }
+
+  return { appId: String(appId), installationId: String(installationId), privateKey };
+}
+
+function b64url(buf) {
+  return Buffer.from(buf).toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function makeJwt(appId, privateKey) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const payload = b64url(JSON.stringify({ iat: now, exp: now + 600, iss: appId }));
+  const input = `${header}.${payload}`;
+  const sig = crypto.createSign('RSA-SHA256').update(input).sign(privateKey, 'base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${input}.${sig}`;
+}
+
+function readCache() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(CACHE_DIR, 'token.json'), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(token, expiresAt) {
+  fs.mkdirSync(CACHE_DIR, { recursive: true });
+  fs.writeFileSync(path.join(CACHE_DIR, 'token.json'),
+    JSON.stringify({ token, expires_at: expiresAt }), { mode: 0o600 });
+}
+
+async function main() {
+  const cfg = loadConfig();
+
+  // Reuse a cached token with more than 60s of life left.
+  const cached = readCache();
+  if (cached && cached.token && cached.expires_at) {
+    const exp = Date.parse(cached.expires_at);
+    if (Number.isFinite(exp) && exp - Date.now() > 60_000) {
+      process.stdout.write(cached.token + '\n');
+      return;
+    }
+  }
+
+  const jwt = makeJwt(cfg.appId, cfg.privateKey);
+  const res = await fetch(`${API}/app/installations/${cfg.installationId}/access_tokens`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'gwl-agents',
+    },
+  });
+
+  const body = await res.json();
+  if (!res.ok) {
+    console.error(`gh-app-token: failed to mint installation token (HTTP ${res.status}): ${body.message || JSON.stringify(body)}`);
+    process.exit(1);
+  }
+
+  writeCache(body.token, body.expires_at);
+  process.stdout.write(body.token + '\n');
+}
+
+main().catch((e) => {
+  console.error(`gh-app-token: ${e.message}`);
+  process.exit(1);
+});
