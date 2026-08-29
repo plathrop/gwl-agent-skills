@@ -8,9 +8,10 @@
 //   env:  GH_APP_ID, GH_APP_INSTALLATION_ID, GH_APP_PRIVATE_KEY
 //   file: ~/.config/gh-app/config.json
 //     { "app_id": 4608186, "installation_id": 154042224,
-//       "private_key": "/home/grey/.config/gh-app/private-key.pem" }
+//       "private_key": "~/.config/gh-app/private-key.pem" }
 //
-// GH_APP_PRIVATE_KEY may be a path to a PEM file or the PEM text itself.
+// GH_APP_PRIVATE_KEY may be a path to a PEM file (a leading ~/ is
+// expanded) or the PEM text itself. Requires Node.js 18+ (global fetch).
 
 const fs = require('node:fs');
 const os = require('node:os');
@@ -46,6 +47,10 @@ function loadConfig() {
 
   // private_key may be a filesystem path or inline PEM text
   if (!String(privateKey).includes('-----BEGIN')) {
+    // expand a leading ~/ so config files can use ~/.config/...
+    if (privateKey === '~' || String(privateKey).startsWith('~/')) {
+      privateKey = path.join(os.homedir(), String(privateKey).slice(1));
+    }
     try {
       privateKey = fs.readFileSync(privateKey, 'utf8');
     } catch (e) {
@@ -81,12 +86,17 @@ function readCache() {
 }
 
 function writeCache(token, expiresAt) {
-  fs.mkdirSync(CACHE_DIR, { recursive: true });
+  fs.mkdirSync(CACHE_DIR, { recursive: true, mode: 0o700 });
   fs.writeFileSync(path.join(CACHE_DIR, 'token.json'),
     JSON.stringify({ token, expires_at: expiresAt }), { mode: 0o600 });
 }
 
 async function main() {
+  if (typeof fetch !== 'function') {
+    console.error('gh-app-token: requires Node.js 18+ (global fetch is unavailable).');
+    process.exit(1);
+  }
+
   const cfg = loadConfig();
 
   // Reuse a cached token with more than 60s of life left.

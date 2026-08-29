@@ -26,7 +26,8 @@ GitHub Apps authenticate in two steps:
 
 `gh-app-token` does both and caches the token for its ~1-hour lifetime.
 `gh-app` is a thin wrapper that sets `GH_TOKEN` to that token and runs
-`gh` unchanged.
+`gh` unchanged. `gh-app-token` requires Node.js 18+ (it uses the global
+`fetch`).
 
 ```
 gh-app pr review 123 --request-changes --body "..."   # as gwl-agents[bot]
@@ -44,11 +45,11 @@ One-time, per machine:
 ```bash
 mkdir -p ~/.config/gh-app
 install -m 600 /path/to/downloaded-key.pem ~/.config/gh-app/private-key.pem
-cat > ~/.config/gh-app/config.json <<'EOF'
+cat > ~/.config/gh-app/config.json <<EOF
 {
   "app_id": 4608186,
   "installation_id": 154042224,
-  "private_key": "/home/grey/.config/gh-app/private-key.pem"
+  "private_key": "$HOME/.config/gh-app/private-key.pem"
 }
 EOF
 ```
@@ -94,7 +95,6 @@ must never be committed to a repository.
 - Installation tokens expire after ~1 hour and are scoped to the app's
   installed repos and granted permissions — far less dangerous than a
   long-lived personal token.
-- The app currently holds broad permissions (`contents`, `secrets`,
-  `workflows`, `security_events`, ...). For the review/comment use case
-  only `pull_requests: write`, `issues: write`, and `contents: read` are
-  needed. Consider trimming the rest to shrink the blast radius.
+- The app holds broad permissions (`contents`, `secrets`, `workflows`,
+  `security_events`, ...) by design — future agent tasks will use them,
+  not just reviews. Treat the private key accordingly.

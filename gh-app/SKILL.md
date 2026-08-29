@@ -14,8 +14,8 @@ post real reviews with a verdict (approve / request changes / comment).
 
 **Use `gh-app` for every write to GitHub. Use plain `gh` only for reads.**
 
-- `gh` is the user's personal identity (`plathrop`). Never post a review,
-  comment, or status with it.
+- `gh` is the user's personal identity. Never post a review, comment,
+  or status with it.
 - `gh-app` is the same `gh` CLI, but authenticated as the app. Every
   command you already know works unchanged.
 
