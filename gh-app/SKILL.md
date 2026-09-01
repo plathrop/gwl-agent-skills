@@ -12,12 +12,23 @@ post real reviews with a verdict (approve / request changes / comment).
 
 ## The one rule
 
-**Use `gh-app` for every write to GitHub. Use plain `gh` only for reads.**
+**Use `gh-app` for every write to GitHub — except creating the PR itself.**
 
-- `gh` is the user's personal identity. Never post a review, comment,
-  or status with it.
-- `gh-app` is the same `gh` CLI, but authenticated as the app. Every
-  command you already know works unchanged.
+- **Creating the PR**: use plain `gh` (Grey's personal credentials). Grey
+  is the author of record for the work; the PR opens as @plathrop. Push
+  the branch and `gh pr create` exactly as you normally would.
+- **Everything after the PR exists** — reviews, PR/issue comments,
+  statuses, labels — use `gh-app` so it's attributed to `gwl-agents[bot]`.
+- **Editing or merging the PR itself** (title, body, ready-for-review,
+  merge when Grey asks): also plain `gh` — the PR is Grey's.
+- Reads are always fine with plain `gh` (see below).
+
+`gh-app` *can* technically create PRs (it's the same `gh`), but don't —
+GitHub won't let an identity review its own PR, so a bot-authored PR can
+never receive a real review verdict from the agents that act on it.
+
+`gh-app` is the same `gh` CLI, but authenticated as the app. Every
+command you already know works unchanged.
 
 ## Posting a review
 
