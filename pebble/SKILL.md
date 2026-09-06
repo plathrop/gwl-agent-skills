@@ -113,12 +113,21 @@ Notes:
 - **Related** links (`pb dep relate <a> <b>`) are bidirectional and do
   not affect readiness — use for "see also" relationships.
 - Priorities: 0 critical, 1 high, 2 medium (default), 3 low, 4 backlog.
+  "Backlog" is just the pretty-print label for P4 (`pb show --pretty`
+  renders `Priority: P4 (backlog)`) — there is no separate "backlog"
+  value; `--priority` accepts 0–4 only.
 - Types: `task`, `bug`, `epic`.
 
 ## Business rules that will bite you
 
 - Statuses: `open`, `in_progress`, `blocked`, `closed`.
 - You **cannot** set status to `closed` via `pb update` — use `pb close`.
+- You **cannot** change an issue's `type` via `pb update` (no `--type`
+  flag). To promote a task → epic (or demote), use the HTTP API that
+  `pb ui` serves:
+  `pb ui --no-open --port <n>` then
+  `curl -X PUT localhost:<n>/api/issues/<id> -H 'Content-Type: application/json' -d '{"type":"epic"}'`.
+  The data model supports type changes; only the CLI omits the flag.
 - You **cannot** claim or start an issue with open blockers.
 - Closing an epic is refused while any child is still open — close or
   reparent the children first.
@@ -201,7 +210,7 @@ check (removing an issue's last event moves its `updatedAt` backwards).
 |---------|---------|
 | `pb init` | Initialize `.pebble/` in the current directory |
 | `pb create <title> [-t type] [-p 0-4] [-d desc] [--parent id] [--blocked-by ids]` | New issue |
-| `pb update <id> [--title|--description|--priority|--status|--parent]` | Edit fields (not close) |
+| `pb update <id...> [--title|--description|--priority|--status|--parent]` | Edit fields (not close); accepts multiple IDs |
 | `pb claim <id...>` | Set status `in_progress` (cascades to open parents) |
 | `pb close <id...> [--reason text] [--comment text]` | Close with a recorded reason |
 | `pb reopen <id> [--reason text]` | Reopen closed issue |
