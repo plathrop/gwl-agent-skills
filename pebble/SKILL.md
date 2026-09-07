@@ -44,8 +44,9 @@ If the user named a specific issue, go straight to it:
 
 ```bash
 pb show <id>             # full details: status, parent, deps, comments
-pb comments list <id>
 ```
+
+There is no `pb comments list` — comments are included in `pb show <id>`.
 
 ### 2. Claim before you work
 
@@ -222,7 +223,7 @@ check (removing an issue's last event moves its `updatedAt` backwards).
 | `pb dep add\|remove <id> <blocker>` | Manage blockers |
 | `pb dep relate\|unrelate <a> <b>` | Manage related links |
 | `pb dep list <id>` / `pb dep tree <id>` | Inspect dependencies |
-| `pb comments add\|list <id> [text]` | Comments |
+| `pb comments add <id> <text>` | Add a comment (read comments via `pb show <id>`) |
 | `pb summary [--status s] [--limit n]` | Epic progress overview |
 | `pb history [--limit n] [--since 7d]` | Recent activity |
 | `pb search <query>` | Full-text search |
