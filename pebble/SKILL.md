@@ -136,28 +136,39 @@ Notes:
 - `pb delete` soft-deletes (hidden, restorable with `pb restore`);
   deleting an epic cascades to its children.
 
-## Pebble in worktree repos (mechanics only)
+## Pebble and feature branches (household discipline)
 
-The *discipline* — where feature work physically happens, and who may
-commit `.pebble` changes — lives in the **worktrees** skill. This
-section is only the `pb`-specific mechanics you need inside that
-discipline:
+The ledger lives in the working tree, so **feature branches diverge
+it** — events strand on unmerged branches, branch checkouts show stale
+snapshots, and merges textually collide on the JSONL. In repos that use
+pebble with feature branches:
 
-- In a git worktree, `pb` uses the **main tree's** `.pebble/` by
-  default, so issues are shared across worktrees. If the user wants
-  worktree-local issues, pass `--local` (global flag, works on any
-  command):
+- The **primary checkout rests on main**. Feature work happens in
+  linked worktrees at `~/Source/worktrees/<project>/<feature>`.
+- **Commit `.pebble` changes only from the primary checkout** — commit
+  and push immediately.
+- `pb` commands from inside a feature worktree are fine and encouraged:
+  they resolve to the primary's live ledger, so every view is the live
+  view. Never pass `--local` in a feature worktree.
+- If the primary checkout is sitting on a feature branch (transition
+  states, old habits), do NOT run pebble mutations there — they will
+  strand on the branch. Switch it back to main first.
 
-  ```bash
-  pb --local create "Experiment-specific task"
-  ```
+Backstops for the above (pre-commit hook + merge driver) can be
+installed with `scripts/setup-worktree-backstops.sh` from this skill.
 
-- Every event records which worktree it came from (`lastSource`
-  field), so you can tell where work happened.
-- From a feature worktree, plain `pb` reads and writes the primary
-  checkout's live ledger — which is exactly what the worktree
-  discipline wants. Never pass `--local` in a feature worktree
-  (except the one merge-conflict case below).
+### Pebble mechanics in worktrees
+
+In a git worktree, `pb` uses the **main tree's** `.pebble/` by default,
+so issues are shared across worktrees. If the user wants worktree-local
+issues, pass `--local` (global flag, works on any command):
+
+```bash
+pb --local create "Experiment-specific task"
+```
+
+Every event records which worktree it came from (`lastSource` field), so
+you can tell where work happened.
 
 ### Resolving a ledger merge conflict
 
@@ -191,10 +202,6 @@ Historical note: empty `update {}` events in the ledger are normal —
 `pb create --parent` writes one to bump the parent's `updatedAt`. They
 are not corruption; don't "clean" them without a replay-equivalence
 check (removing an issue's last event moves its `updatedAt` backwards).
-
-The incident history and the measured tool behaviors behind all of this
-live in the worktrees skill's design note
-([../worktrees/WORKTREE-WORKFLOW.md](../worktrees/WORKTREE-WORKFLOW.md)).
 
 ## Command quick reference
 
