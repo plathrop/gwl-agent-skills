@@ -44,28 +44,25 @@ git worktree remove ~/Source/worktrees/<project>/<feature>
   force-pushing the feature branch is fine — it owns nothing outside
   itself.
 
-## Interplay with Pebble (`.pebble/` repos)
+## Ledgers and other shared working-tree state
 
-In repos tracked with Pebble, the ledger (`.pebble/issues.jsonl`) is
-shared working-tree state and follows rule 3:
+Pebble repos are the sharpest case: the ledger (`.pebble/issues.jsonl`)
+is append-only cross-branch state, so it follows rule 3 —
 
-- Run `pb` commands from anywhere, worktrees included — `pb` resolves
-  to the **primary checkout's** ledger by default, so every view is the
-  live view. Never pass `pb --local` in a feature worktree.
 - Commit `.pebble` changes only from the primary checkout, on main,
   and push immediately.
-- For the `pb`-side mechanics (ledger merge reconciliation, `--local`
-  semantics), see the **pebble** skill.
+- Running `pb` from a feature worktree is fine and encouraged: `pb`
+  resolves to the primary checkout's ledger by default, so every view
+  is the live view. Never pass `pb --local` in a feature worktree.
 
 ## Backstops (belt and suspenders)
 
-Discipline slips happen. Pebble repos can install construction
-backstops via the pebble skill's `scripts/setup-worktree-backstops.sh`:
-a pre-commit hook that rejects `.pebble` changes on non-main branches,
-and a git merge driver that reconciles ledger files by event-union
-instead of line-soup. If a pre-commit hook rejects your commit with a
-pointer to this discipline, that's the backstop working — move the
-change to the primary checkout.
+Discipline slips happen, so some repos install construction backstops:
+a pre-commit hook that rejects `.pebble` changes on any branch but
+main, and a git merge driver that reconciles ledger files by
+event-union instead of line-soup. If a pre-commit hook rejects your
+commit with a pointer to this discipline, that's the backstop working —
+move the change to the primary checkout.
 
 ## Why this exists
 

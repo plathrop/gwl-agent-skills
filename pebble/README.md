@@ -40,14 +40,13 @@ ledger merge reconciliation).
   tooling in the loaded protocol — just the `pb` CLI, so the skill
   works anywhere. Optional repo-setup scripts live under `scripts/`
   for the worktree backstops below.
-- **Branch discipline is a house rule, not a tool feature — and it
-  lives in the worktrees skill.** Because the ledger lives in the
-  working tree, feature branches diverge it; the remedy (primary
-  checkout on main, feature work in linked worktrees, `.pebble`
-  commits only from main) is a general workflow discipline, so it was
-  extracted into the [worktrees skill](../worktrees/) (2026-09-09).
-  This skill keeps only the `pb`-specific mechanics; the design note
-  moved with the discipline.
+- **Branch discipline is a house rule, not a tool feature.** Because
+  the ledger lives in the working tree, feature branches diverge it.
+  The skill states the household's worktree discipline in full
+  (primary checkout on main, feature work in linked worktrees,
+  `.pebble` commits only from main) so the skill stands alone; the
+  incident history behind it lives in
+  [WORKTREE-WORKFLOW.md](../worktrees/WORKTREE-WORKFLOW.md).
 
 ## Requirements
 

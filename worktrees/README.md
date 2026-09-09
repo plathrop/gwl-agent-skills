@@ -18,18 +18,13 @@ Teaches the agent where work physically happens, so that:
 
 ## Why a separate skill
 
-This discipline lived inside the **pebble** skill, because its sharpest
-teeth are the `.pebble/` ledger rules. But agents only encountered it
-when the task named pebble — then conflated "how do I track work" with
-"where does my worktree go". The discipline is general (it applies to
-any feature work in any repo), so it earned its own skill (2026-09-09).
-The pebble skill still covers the `pb`-specific mechanics
-(primary-tree resolution, `--local`, ledger merge reconciliation) and
-cross-references this skill for the discipline.
+This discipline generalizes beyond any one tool — it applies to any
+feature work in any repo. The sharpest teeth are the `.pebble/` ledger
+rules, but feature-work placement and main-line hygiene stand on their
+own.
 
 ## Rationale and incident history
 
 See [WORKTREE-WORKFLOW.md](WORKTREE-WORKFLOW.md): the two incidents that
-motivated the discipline, the measured tool behaviors it relies on, the
-construction backstops (pre-commit hook + merge driver, shipped with the
-pebble skill's scripts), and the rejected alternatives.
+motivated the discipline, the measured tool behaviors it relies on, and
+the rejected alternatives.
