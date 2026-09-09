@@ -1,9 +1,14 @@
-# Pebble + git branches: the worktree workflow
+# The worktree workflow: a design note
 
-*Design note, 2026-08-15. Decided by Grey and Remi after two incidents:
-stranded pebble events riding an unmerged feature branch (2026-08-14)
-and a textual-merge fight over `.pebble/issues.jsonl` during a rebase
-(2026-08-15). Applies to every repo that uses pebble.*
+*2026-08-15. Decided by Grey and Remi after two incidents: stranded
+pebble events riding an unmerged feature branch (2026-08-14) and a
+textual-merge fight over `.pebble/issues.jsonl` during a rebase
+(2026-08-15). Moved out of the pebble skill into its own skill
+2026-09-09: the discipline is about where work physically happens and
+only incidentally about pebble — agents kept finding it only when they
+loaded the pebble skill, then conflating the two. Applies to every repo
+in the household, with the ledger rules biting hardest where pebble is
+in use.*
 
 ## The problem
 
@@ -81,9 +86,8 @@ per clone and after updating the canonical hook).
 
 ## Transition
 
-Adopt per-repo when its primary checkout next rests on main. (For
-hearth: when PR #12 merges.) The first ledger write under the new rules
-should be the pebble tracking the two backstops above.
+Adopted household-wide. (The original note said "when hearth's PR #12
+merges" — it merged 2026-08-15; the discipline has been live since.)
 
 ## Upstream
 
