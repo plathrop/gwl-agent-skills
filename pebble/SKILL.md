@@ -136,46 +136,33 @@ Notes:
 - `pb delete` soft-deletes (hidden, restorable with `pb restore`);
   deleting an epic cascades to its children.
 
-## Multi-worktree repos
+## Pebble in worktree repos (mechanics only)
 
-In a git worktree, `pb` uses the **main tree's** `.pebble/` by default so
-issues are shared across worktrees. If the user wants worktree-local
-issues, pass `--local` (global flag, works on any command):
+The *discipline* — where feature work physically happens, and who may
+commit `.pebble` changes — lives in the **worktrees** skill. This
+section is only the `pb`-specific mechanics you need inside that
+discipline:
 
-```bash
-pb --local create "Experiment-specific task"
-```
+- In a git worktree, `pb` uses the **main tree's** `.pebble/` by
+  default, so issues are shared across worktrees. If the user wants
+  worktree-local issues, pass `--local` (global flag, works on any
+  command):
 
-Every event records which worktree it came from (`lastSource` field), so
-you can tell where work happened.
+  ```bash
+  pb --local create "Experiment-specific task"
+  ```
 
-### The branch discipline (house rule, adopted 2026-08-15)
-
-The ledger lives in the working tree, so **feature branches diverge it**
-— events strand on unmerged branches, branch checkouts show stale
-snapshots, and merges textually collide on the JSONL. In repos that use
-pebble with feature branches:
-
-- The **primary checkout rests on main**. Feature work happens in linked
-  worktrees at `~/Source/worktrees/<project>/<feature>`.
-- **Commit `.pebble` changes only from the primary checkout** — commit
-  and push immediately, as usual.
-- `pb` commands from inside a feature worktree are fine and encouraged:
-  they resolve to the primary's live ledger, so every view is the live
-  view. Never pass `--local` in a feature worktree.
-- If the primary checkout is sitting on a feature branch (transition
-  states, old habits), do NOT run pebble mutations there — they will
-  strand on the branch. Switch it back to main first.
-
-See [WORKTREE-WORKFLOW.md](WORKTREE-WORKFLOW.md) for the full design
-note: the incident history, the measured pb behaviors this relies on,
-and the construction backstops (pre-commit hook + merge driver; install
-with `scripts/setup-worktree-backstops.sh`).
+- Every event records which worktree it came from (`lastSource`
+  field), so you can tell where work happened.
+- From a feature worktree, plain `pb` reads and writes the primary
+  checkout's live ledger — which is exactly what the worktree
+  discipline wants. Never pass `--local` in a feature worktree
+  (except the one merge-conflict case below).
 
 ### Resolving a ledger merge conflict
 
 If two branches both carry `.pebble/issues.jsonl` changes (it happens —
-pre-2026-08-15 habits die hard), do NOT resolve the conflict by hand.
+pre-discipline habits die hard), do NOT resolve the conflict by hand.
 Line-picking through an append-only JSONL log produces duplicate and
 out-of-order events. Reconcile by event union with `pb merge`, which
 dedupes (key: `issueId-timestamp-type`) and sorts by event time:
@@ -204,6 +191,10 @@ Historical note: empty `update {}` events in the ledger are normal —
 `pb create --parent` writes one to bump the parent's `updatedAt`. They
 are not corruption; don't "clean" them without a replay-equivalence
 check (removing an issue's last event moves its `updatedAt` backwards).
+
+The incident history and the measured tool behaviors behind all of this
+live in the worktrees skill's design note
+([../worktrees/WORKTREE-WORKFLOW.md](../worktrees/WORKTREE-WORKFLOW.md)).
 
 ## Command quick reference
 

@@ -18,8 +18,9 @@ codes:
 
 It also covers work breakdown (epics → tasks → dependencies), the
 business rules an agent is likely to trip over (can't close via
-`update`, can't claim blocked issues, epic close cascades), and
-multi-worktree behavior.
+`update`, can't claim blocked issues, epic close cascades), and the
+worktree-specific `pb` mechanics (primary-tree resolution, `--local`,
+ledger merge reconciliation).
 
 ## Design decisions
 
@@ -39,11 +40,14 @@ multi-worktree behavior.
   tooling in the loaded protocol — just the `pb` CLI, so the skill
   works anywhere. Optional repo-setup scripts live under `scripts/`
   for the worktree backstops below.
-- **Branch discipline is a house rule, not a tool feature.** Because the
-  ledger lives in the working tree, feature branches diverge it. The
-  skill prescribes the worktree workflow (primary checkout on main,
-  feature work in linked worktrees) — see
-  [WORKTREE-WORKFLOW.md](WORKTREE-WORKFLOW.md) for the design note.
+- **Branch discipline is a house rule, not a tool feature — and it
+  lives in the worktrees skill.** Because the ledger lives in the
+  working tree, feature branches diverge it; the remedy (primary
+  checkout on main, feature work in linked worktrees, `.pebble`
+  commits only from main) is a general workflow discipline, so it was
+  extracted into the [worktrees skill](../worktrees/) (2026-09-09).
+  This skill keeps only the `pb`-specific mechanics; the design note
+  moved with the discipline.
 
 ## Requirements
 
