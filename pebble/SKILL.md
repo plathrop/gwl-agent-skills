@@ -136,72 +136,11 @@ Notes:
 - `pb delete` soft-deletes (hidden, restorable with `pb restore`);
   deleting an epic cascades to its children.
 
-## Pebble and feature branches (household discipline)
+## Working from a git worktree
 
-The ledger lives in the working tree, so **feature branches diverge
-it** — events strand on unmerged branches, branch checkouts show stale
-snapshots, and merges textually collide on the JSONL. In repos that use
-pebble with feature branches:
-
-- The **primary checkout rests on main**. Feature work happens in
-  linked worktrees at `~/Source/worktrees/<project>/<feature>`.
-- **Commit `.pebble` changes only from the primary checkout** — commit
-  and push immediately.
-- `pb` commands from inside a feature worktree are fine and encouraged:
-  they resolve to the primary's live ledger, so every view is the live
-  view. Never pass `--local` in a feature worktree.
-- If the primary checkout is sitting on a feature branch (transition
-  states, old habits), do NOT run pebble mutations there — they will
-  strand on the branch. Switch it back to main first.
-
-Backstops for the above (pre-commit hook + merge driver) can be
-installed with `scripts/setup-worktree-backstops.sh` from this skill.
-
-### Pebble mechanics in worktrees
-
-In a git worktree, `pb` uses the **main tree's** `.pebble/` by default,
-so issues are shared across worktrees. If the user wants worktree-local
-issues, pass `--local` (global flag, works on any command):
-
-```bash
-pb --local create "Experiment-specific task"
-```
-
-Every event records which worktree it came from (`lastSource` field), so
-you can tell where work happened.
-
-### Resolving a ledger merge conflict
-
-If two branches both carry `.pebble/issues.jsonl` changes (it happens —
-pre-discipline habits die hard), do NOT resolve the conflict by hand.
-Line-picking through an append-only JSONL log produces duplicate and
-out-of-order events. Reconcile by event union with `pb merge`, which
-dedupes (key: `issueId-timestamp-type`) and sorts by event time:
-
-```bash
-git show <main-ref>:.pebble/issues.jsonl > /tmp/ledger-a.jsonl
-git show <branch-ref>:.pebble/issues.jsonl > /tmp/ledger-b.jsonl
-pb merge /tmp/a.jsonl /tmp/b.jsonl -o .pebble/issues.jsonl
-git add .pebble/issues.jsonl
-```
-
-Then verify before continuing the merge/rebase:
-
-- Line count: result should be >= the larger input and <= the sum.
-- `pb --local show <id>` on issues the branch recently touched —
-  `--local` is required here: during a rebase in a linked worktree,
-  plain `pb` reads the primary checkout's ledger, NOT the conflicted
-  file you just wrote. This is the one situation where `--local` is
-  correct in a worktree.
-- If paranoid: two *different* events sharing an
-  `issueId-timestamp-type` key would collide (same-millisecond writes);
-  effectively never seen in practice, but checkable with a grep for
-  duplicate keys if the stakes are high.
-
-Historical note: empty `update {}` events in the ledger are normal —
-`pb create --parent` writes one to bump the parent's `updatedAt`. They
-are not corruption; don't "clean" them without a replay-equivalence
-check (removing an issue's last event moves its `updatedAt` backwards).
+If you are working in a git worktree, `pb` reads and writes the
+**primary checkout's** `.pebble/` ledger, not the worktree's — that is
+the default behavior and the correct one. Nothing extra to do.
 
 ## Command quick reference
 
@@ -228,6 +167,5 @@ check (removing an issue's last event moves its `updatedAt` backwards).
 | `pb graph [--root id]` | ASCII dependency graph |
 | `pb ui [--port n]` | Web UI (default port 3333) |
 
-Global flags: `-P/--pretty` (human output), `--local` (worktree-local
-`.pebble/`), `-h/--help`. Shorthand flags vary per command — check
-`pb <cmd> --help` when unsure.
+Global flags: `-P/--pretty` (human output), `-h/--help`. Shorthand
+flags vary per command — check `pb <cmd> --help` when unsure.

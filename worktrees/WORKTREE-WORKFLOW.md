@@ -96,3 +96,32 @@ default proves it). A kind feature request: a first-class
 "ledger lives in the primary checkout" mode for pebble commands run in
 the primary checkout while it sits on a feature branch — or a built-in
 `pb merge-driver` subcommand suitable for `.gitconfig`.
+
+## Appendix: resolving a ledger merge conflict
+
+If two branches both carry `.pebble/issues.jsonl` changes despite the
+discipline (pre-2026-08-15 habits, a clone lacking the hook), do NOT
+resolve the conflict by hand. Line-picking through an append-only JSONL
+log produces duplicate and out-of-order events. Reconcile by event union
+with `pb merge`, which dedupes (key: `issueId-timestamp-type`) and sorts
+by event time:
+
+```bash
+git show <main-ref>:.pebble/issues.jsonl > /tmp/ledger-a.jsonl
+git show <branch-ref>:.pebble/issues.jsonl > /tmp/ledger-b.jsonl
+pb merge /tmp/ledger-a.jsonl /tmp/ledger-b.jsonl -o .pebble/issues.jsonl
+git add .pebble/issues.jsonl
+```
+
+Verify before continuing the merge/rebase:
+
+- Line count: result should be >= the larger input and <= the sum.
+- `pb --local show <id>` on issues the branch recently touched —
+  `--local` is required here: during a rebase in a linked worktree,
+  plain `pb` reads the primary checkout's ledger, NOT the conflicted
+  file you just wrote. This is the one situation where `--local` is
+  correct in a worktree.
+
+Historical note: empty `update {}` events in the ledger are normal —
+`pb create --parent` writes one to bump the parent's `updatedAt`. They
+are not corruption.
