@@ -16,11 +16,9 @@ codes:
 4. **Close** — `pb close <id> --reason "<what changed>"` when done
 5. **File** — create new issues for work discovered along the way
 
-It also covers work breakdown (epics → tasks → dependencies), the
+It also covers work breakdown (epics → tasks → dependencies) and the
 business rules an agent is likely to trip over (can't close via
-`update`, can't claim blocked issues, epic close cascades), and the
-worktree-specific `pb` mechanics (primary-tree resolution, `--local`,
-ledger merge reconciliation).
+`update`, can't claim blocked issues, epic close cascades).
 
 ## Design decisions
 
@@ -38,58 +36,16 @@ ledger merge reconciliation).
   events stay well-formed and sourced.
 - **Harness-agnostic runtime.** No subagents or harness-specific
   tooling in the loaded protocol — just the `pb` CLI, so the skill
-  works anywhere. Optional repo-setup scripts live under `scripts/`
-  for the worktree backstops below.
-- **Branch discipline is a house rule, not a tool feature.** Because
-  the ledger lives in the working tree, feature branches diverge it.
-  The skill states the household's worktree discipline in full
-  (primary checkout on main, feature work in linked worktrees,
-  `.pebble` commits only from main) so the skill stands alone; the
-  incident history behind it lives in
-  [WORKTREE-WORKFLOW.md](../worktrees/WORKTREE-WORKFLOW.md).
+  works anywhere.
+- **One fact about worktrees, stated once.** `pb` resolves to the
+  primary checkout's ledger by default; the skill says so and says
+  nothing more, because the discipline around worktrees is a separate
+  concern (and a separate skill in this family, not a dependency).
 
 ## Requirements
 
 - Node 18+ and Pebble installed: `npm install -g @markmdev/pebble`
 - A repo initialized with `pb init` (the skill covers this if missing)
-
-## Installing the worktree backstops
-
-For a repo that uses Pebble with feature branches, install the ledger
-guard hook and merge driver with:
-
-```bash
-~/Source/gwl-agent-skills/pebble/scripts/setup-worktree-backstops.sh /path/to/repo
-```
-
-Run it from a checkout of this skill repo. The script is idempotent and
-will:
-
-- copy `scripts/pre-commit` to `<repo>/.githooks/pre-commit` and make it
-  executable
-- ensure `.gitattributes` contains `.pebble/issues.jsonl merge=pebble`
-- set repo-local git config: `core.hooksPath=.githooks`,
-  `merge.pebble.name`, and `merge.pebble.driver="pb merge %A %B -o %A"`
-- create `~/Source/worktrees/<repo-name>` for the house worktree
-  convention
-
-Re-run it for each clone and after updating the canonical hook in this
-skill. It refuses to overwrite an existing different
-`.githooks/pre-commit`, `core.hooksPath`, merge driver, or
-`.gitattributes` merge setting; integrate those manually first.
-
-Manual equivalent:
-
-```bash
-cd /path/to/repo
-mkdir -p .githooks
-cp ~/Source/gwl-agent-skills/pebble/scripts/pre-commit .githooks/pre-commit
-chmod +x .githooks/pre-commit
-printf '.pebble/issues.jsonl merge=pebble\n' >> .gitattributes
-git config core.hooksPath .githooks
-git config merge.pebble.name "Pebble ledger event-union merge"
-git config merge.pebble.driver "pb merge %A %B -o %A"
-```
 
 ## Usage
 
@@ -99,9 +55,7 @@ repo or the user asks it to file/find/close issues via `pb`.
 
 No configuration is needed for the skill itself. Pebble itself can be
 configured via `.pebble/config.json` (issue ID prefix, worktree sharing
-behavior). Repo backstop setup is optional but recommended for repos
-that use feature branches — see "Installing the worktree backstops"
-above.
+behavior).
 
 ## Reference
 
