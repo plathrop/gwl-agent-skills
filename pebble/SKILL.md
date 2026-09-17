@@ -38,6 +38,7 @@ pb ready                 # issues with no open blockers (the work queue)
 pb list --status in_progress   # work already claimed (possibly by you earlier)
 pb blocked -v            # what is stuck and why
 pb summary               # epic-level view with child completion counts
+pb history --since 7d    # recent activity — what moved, what closed
 ```
 
 If the user named a specific issue, go straight to it:
@@ -90,9 +91,12 @@ Close multiple issues at once with `pb close <id1> <id2> ...`.
 ### 5. File new work you discover
 
 If you find bugs, follow-up work, or scope creep while coding, file it
-rather than silently expanding your current task:
+rather than silently expanding your current task — but `pb search`
+first to check it doesn't already exist; if it does, extend it with a
+comment instead of filing a duplicate:
 
 ```bash
+pb search "logout redirect"   # dedupe before creating
 pb create "Fix flaky logout redirect" -t bug -p 1
 pb create "Refactor auth module" -t task --parent <epic-id>
 ```
@@ -116,8 +120,34 @@ Notes:
 - Priorities: 0 critical, 1 high, 2 medium (default), 3 low, 4 backlog.
   "Backlog" is just the pretty-print label for P4 (`pb show --pretty`
   renders `Priority: P4 (backlog)`) — there is no separate "backlog"
-  value; `--priority` accepts 0–4 only.
+  value; `--priority` accepts 0–4 only. See *Assigning priorities*
+  below for how to choose one.
 - Types: `task`, `bug`, `epic`.
+
+## Assigning priorities
+
+Consistent priority assignment keeps the queue meaningful. The
+convention:
+
+- **P0 — dangerous or blocking**: dangerous bugs (data loss, security,
+  active outage), and any issue — bug or task — that blocks current
+  P1 work.
+- **P1 — active work**: active workstreams and immediate next goals;
+  bugs that associate closely with one of those; and bugs that don't
+  meet the "dangerous" bar but are likely to become footguns during
+  P1 work, block P1 work, or describe risks that are currently
+  prevented by convention rather than construction.
+- **P2 — default**: the default priority for new work.
+- **P3 — should-do, deferrable**: the default for things that should
+  be done but are reasonably deferred — cleanups, and bugs that don't
+  fall into a higher level.
+- **P4 — future**: future features, explicitly deferred work, and
+  one-off thoughts discovered during other work that don't obviously
+  fall into a higher priority.
+
+Note the consequence for blockers: a blocker of current P1 work is
+P0 by definition — that inversion is the most common discrepancy
+you'll find (see *Priority discrepancies*).
 
 ## Priority discrepancies
 
@@ -129,10 +159,10 @@ let the user decide.
 Watch for:
 
 - **Blocker inversion** — a blocker rated lower priority than the issue
-  it blocks. If a P3 bug blocks a P1 task, that bug is at least P1-urgent
-  in practice: nothing downstream of it can start until it's done.
-  Either the blocker should be raised or the blocked issue should be
-  lowered — one of the two ratings is wrong.
+  it blocks. Nothing downstream of it can start until it's done, so it
+  is at least as urgent as what it blocks (a blocker of P1 work is P0
+  by the convention above). Either the blocker should be raised or the
+  blocked issue should be lowered — one of the two ratings is wrong.
 - **Parent/child drift** — a P1 epic whose children are all P4 is
   probably a stale epic; a P4 epic with a P1 child is probably a child
   with a mistyped priority. Epic priority should roughly reflect its
@@ -148,13 +178,45 @@ When you spot a discrepancy:
    know a reason the numbers disagree that the graph doesn't show.
 2. **Raise it with a concrete recommendation**: which issue's priority
    looks wrong, which direction to move it, and why (e.g. "P3 bug #47
-   blocks the P1 login epic #12 — suggest raising #47 to P1, or
+   blocks the P1 login epic #12 — suggest raising #47 to P0, or
    lowering #12 if it's no longer urgent").
 3. **If the user agrees**, make the change and add a
    `pb comments add` noting why, so the history explains the jump.
 4. Sanity-check at creation time too: before wiring
    `pb dep add` / `--blocked-by` or parenting a child under an epic,
    look at the priorities you're about to connect.
+
+## Recommending next work
+
+When the user asks "from your perspective, what are the best next
+steps?" — rank the work rather than dumping `pb ready`. The user is
+asking for judgement, not a mechanical sort. Weight the dimensions
+like this:
+
+1. **Priority as coarse bands, not a strict sort.** P0/P1 is "do now";
+   P2/P3 is scheduled work; P4 is ideas. Within a band, don't let a
+   one-level priority difference decide — priorities are coarse and
+   go stale.
+2. **Level of definition** — the strongest within-band tiebreaker. A
+   well-specified issue can be started correctly without a design
+   conversation first; the top of this dimension is an issue with an
+   associated openspec spec. Vague issues need the user's input before
+   they're truly ready.
+3. **Age** — an old issue has been passed over repeatedly, which
+   deserves an explanation in your ranking (fix it, finish it, or
+   deprioritize it) even if it stays ranked low.
+4. **Complexity** — a nudge, not a rule: lower-complexity issues are
+   quicker, lower-risk wins, so prefer them when a band is otherwise
+   tied.
+5. **Your judgement — an override, not a weight.** If you believe
+   something deserves a higher or lower position than the mechanical
+   ranking produces, move it and say why. The user values agent
+   judgement that catches nuance, but only when it's argued, never
+   silently.
+
+Present the result as a short ordered list — issue, one-line
+rationale each — and flag anything you promoted or deferred against
+the mechanical ordering.
 
 ## Business rules that will bite you
 

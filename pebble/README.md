@@ -17,10 +17,12 @@ codes:
 5. **File** — create new issues for work discovered along the way
 6. **Watch** — flag priority discrepancies (e.g. a P3 bug blocking a
    P1 task) with a recommendation, never silently adjusting
+7. **Recommend** — rank ready work when asked for next steps
 
-It also covers work breakdown (epics → tasks → dependencies) and the
-business rules an agent is likely to trip over (can't close via
-`update`, can't claim blocked issues, epic close cascades).
+It also covers work breakdown (epics → tasks → dependencies), a P0–P4
+priority rubric for consistent assignment, and the business rules an
+agent is likely to trip over (can't close via `update`, can't claim
+blocked issues, epic close cascades).
 
 ## Design decisions
 
@@ -43,6 +45,10 @@ business rules an agent is likely to trip over (can't close via
   primary checkout's ledger by default; the skill says so and says
   nothing more, because the discipline around worktrees is a separate
   concern (and a separate skill in this family, not a dependency).
+- **Priorities are the user's call.** The skill gives the agent a
+  rubric for consistent assignment and a protocol for flagging
+  discrepancies, but priority changes are recommended, never made
+  silently — the tracker is a shared record of the user's judgment.
 
 ## Requirements
 
