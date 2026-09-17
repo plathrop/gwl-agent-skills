@@ -119,6 +119,43 @@ Notes:
   value; `--priority` accepts 0–4 only.
 - Types: `task`, `bug`, `epic`.
 
+## Priority discrepancies
+
+Priorities and the dependency graph tell two stories about urgency, and
+they must agree. When they contradict, that's usually a stale priority —
+but it's not the agent's call to fix silently. Flag it, recommend, and
+let the user decide.
+
+Watch for:
+
+- **Blocker inversion** — a blocker rated lower priority than the issue
+  it blocks. If a P3 bug blocks a P1 task, that bug is at least P1-urgent
+  in practice: nothing downstream of it can start until it's done.
+  Either the blocker should be raised or the blocked issue should be
+  lowered — one of the two ratings is wrong.
+- **Parent/child drift** — a P1 epic whose children are all P4 is
+  probably a stale epic; a P4 epic with a P1 child is probably a child
+  with a mistyped priority. Epic priority should roughly reflect its
+  children.
+
+These surface in any view that shows the graph or hierarchy:
+`pb dep tree <id>`, `pb blocked -v`, `pb summary`, and `pb list --parent`.
+
+When you spot a discrepancy:
+
+1. **Don't silently `pb update --priority`.** Priorities encode the
+   user's judgment, and the tracker is the shared record — the user may
+   know a reason the numbers disagree that the graph doesn't show.
+2. **Raise it with a concrete recommendation**: which issue's priority
+   looks wrong, which direction to move it, and why (e.g. "P3 bug #47
+   blocks the P1 login epic #12 — suggest raising #47 to P1, or
+   lowering #12 if it's no longer urgent").
+3. **If the user agrees**, make the change and add a
+   `pb comments add` noting why, so the history explains the jump.
+4. Sanity-check at creation time too: before wiring
+   `pb dep add` / `--blocked-by` or parenting a child under an epic,
+   look at the priorities you're about to connect.
+
 ## Business rules that will bite you
 
 - Statuses: `open`, `in_progress`, `blocked`, `closed`.

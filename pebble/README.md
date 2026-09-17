@@ -15,6 +15,8 @@ codes:
 3. **Record** — leave `pb comments` when making decisions or discoveries
 4. **Close** — `pb close <id> --reason "<what changed>"` when done
 5. **File** — create new issues for work discovered along the way
+6. **Watch** — flag priority discrepancies (e.g. a P3 bug blocking a
+   P1 task) with a recommendation, never silently adjusting
 
 It also covers work breakdown (epics → tasks → dependencies) and the
 business rules an agent is likely to trip over (can't close via
