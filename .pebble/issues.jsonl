@@ -13,3 +13,4 @@
 {"type":"update","issueId":"GWLA-m288cp","timestamp":"2026-09-17T15:16:16.393Z","data":{"relatedTo":["GWLA-iago71"]},"source":"gwl-agent-skills"}
 {"type":"update","issueId":"GWLA-iago71","timestamp":"2026-09-17T15:16:28.924Z","data":{"relatedTo":[]},"source":"gwl-agent-skills"}
 {"type":"update","issueId":"GWLA-m288cp","timestamp":"2026-09-17T15:16:28.924Z","data":{"relatedTo":[]},"source":"gwl-agent-skills"}
+{"type":"close","issueId":"GWLA-m288cp","timestamp":"2026-09-17T15:17:25.866Z","data":{"reason":"Landed in commits 7bbf4f1 (discrepancy detection) and 7cd33d1 (priority rubric, ready-work ranking, pb search/history in protocol, README sync). Claim-contention exploration filed separately as GWLA-iago71, blocked by this issue until it closed."},"source":"gwl-agent-skills"}
