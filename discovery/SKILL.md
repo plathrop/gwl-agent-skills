@@ -13,8 +13,9 @@ next — you cannot rank work you haven't seen.
 
 **Discovery is read-only.** It claims no issues, edits no files, opens
 no PRs. Its output is a synthesis for the user and orientation for the
-agent. The only permissible write is recording what you learned if the
-project's tracker conventions call for it, and only after reporting.
+agent. Acting on a finding — filing a bug, claiming work, recording a
+discovery in the tracker — is a *follow-up* after you report, never part of
+the pass itself.
 
 ## Principles
 
@@ -56,6 +57,7 @@ and the tracker tells you which code matters before you read any.
 
 ```
 pb ready              # the work queue
+pb list --status in_progress   # work already claimed / in flight
 pb blocked -v         # stuck work and why
 pb summary            # epics in flight
 pb history --since 14d
@@ -94,8 +96,8 @@ openspec status --change <name> --json
 git log --oneline -20
 git worktree list
 git branch -a
-gh pr list --state open
-gh pr view <n> --json reviews,comments
+gh pr list --state open --json number,title,baseRefName,headRefName,reviewDecision
+gh pr view <n> --json title,baseRefName,headRefName,headRefOid,reviewDecision,reviews,comments
 ```
 
 - Map the three to each other: a worktree without a branch, a branch
@@ -109,14 +111,20 @@ gh pr view <n> --json reviews,comments
 
 ### 7. Cross-checks (where discovery earns its keep)
 
-- **References resolve.** Decision records, specs, runbooks, and issues
-  cited in documents should exist on the branch you're reading. When
-  one doesn't, suspect a stacked branch first: check
-  `git log --all --grep=<subject>` and the PR list before assuming the
-  reference is dead.
+- **References resolve.** Distinguish the two kinds: *local artifacts*
+  (decision records, specs, in-repo runbooks) should exist on the branch
+  you're reading; *service-backed references* (tracker issues, external
+  URLs) resolve against their service, not the filesystem — don't flag a
+  valid issue or URL as broken. For a missing local artifact, suspect a
+  sibling or stacked branch first: search by path across refs
+  (`git log --all --oneline -- <path>`), then the PR list, before
+  declaring the reference dead. (`--grep` matches commit *subjects*,
+  which need not contain the filename.)
 - **Tracker matches reality.** An open issue describing work that
   appears done in history (or closed work that regressed) is worth
-  flagging; don't silently reconcile.
+  flagging; don't silently reconcile. (In a worktree, `pb` reads the
+  *primary checkout's* ledger, so "reality" is main's, not the
+  worktree's.)
 - **Priorities agree with the dependency graph** (per the pebble
   skill).
 - **Stale things** get named: untouched in-progress issues, lingering

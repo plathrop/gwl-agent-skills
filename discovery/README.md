@@ -25,8 +25,8 @@ The second failure mode is the reason this skill exists: the pass
 itself is cheap, but the cross-checks and synthesis are where it pays
 off. The canonical catch: a proposal in a worktree cited a
 `secret-placement-rubric` decision record that didn't exist on either
-`main` or the worktree's branch — because it lived on a *different
-unmerged branch* the work was stacked on. Reading commands
+`main` or the worktree's branch — because it lived on a *different,
+unmerged branch*. Reading commands
 individually would never have found that; comparing them did.
 
 ## What it does
