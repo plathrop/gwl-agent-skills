@@ -30,3 +30,4 @@
 {"type":"comment","issueId":"GWLA-us3u6o","timestamp":"2026-10-07T14:30:00.187Z","data":{"text":"SKILL.md rule + README rationale written on branch gh-app-attribution; PR #5 opened against main.","timestamp":"2026-10-07T14:30:00.187Z"},"source":"gh-app-attribution"}
 {"type":"close","issueId":"GWLA-xyg2r3","timestamp":"2026-10-07T14:45:34.022Z","data":{"reason":"Merged in PR #4. discovery->orient, pi-interaction->drive-pi. Installed symlinks repointed in ~/.pi/agent/skills/."},"source":"gwl-agent-skills"}
 {"type":"close","issueId":"GWLA-us3u6o","timestamp":"2026-10-07T14:46:01.095Z","data":{"reason":"Merged in PR #5. gh-app SKILL.md rule + README rationale + PI_MODEL note landed. Global AGENTS.md mirror is dotfiles DOTF-ta3gmk (PR #2)."},"source":"gwl-agent-skills"}
+{"type":"close","issueId":"GWLA-rzktso","timestamp":"2026-10-07T14:50:13.097Z","data":{"reason":"Removed harness-specific/ (opencode/multi-review) in commit 96e7773."},"source":"gwl-agent-skills"}
