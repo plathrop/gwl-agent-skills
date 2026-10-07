@@ -27,3 +27,4 @@
 {"type":"update","issueId":"GWLA-us3u6o","timestamp":"2026-10-07T14:29:21.438Z","data":{"status":"in_progress"},"source":"gwl-agent-skills"}
 {"type":"update","issueId":"GWLA-us3u6o","timestamp":"2026-10-07T14:29:22.163Z","data":{"relatedTo":["GWLA-4dc35g"]},"source":"gwl-agent-skills"}
 {"type":"update","issueId":"GWLA-4dc35g","timestamp":"2026-10-07T14:29:22.163Z","data":{"relatedTo":["GWLA-fi1m8w","GWLA-us3u6o"]},"source":"gwl-agent-skills"}
+{"type":"comment","issueId":"GWLA-us3u6o","timestamp":"2026-10-07T14:30:00.187Z","data":{"text":"SKILL.md rule + README rationale written on branch gh-app-attribution; PR #5 opened against main.","timestamp":"2026-10-07T14:30:00.187Z"},"source":"gh-app-attribution"}
