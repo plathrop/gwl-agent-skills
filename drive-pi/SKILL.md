@@ -1,9 +1,9 @@
 ---
-name: pi-interaction
+name: drive-pi
 description: Drive the pi coding agent CLI headlessly — print/JSON/RPC modes, commissioning not-me code reviews and subagents, processing structured output, timeouts and cost. Use when spawning pi as a subprocess for reviews, second opinions, scoped questions, or any work where a fresh not-me instance is the right colleague.
 ---
 
-# Interacting with pi (headless)
+# Driving pi (headless)
 
 Pi has three modes that cover nearly every headless use case. Choose by
 how much conversation and observability you need:
@@ -107,4 +107,3 @@ counts. Keep the record.
 ## See also
 
 - `docs/pi-notes.md` in the hearth repo for SDK-level API notes.
-- The `multi-review` skill for parallel multi-model review pipelines.

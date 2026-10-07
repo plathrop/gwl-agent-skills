@@ -11,7 +11,7 @@ rationale and usage docs).
 | [orient](orient/) | Orient in a repo at session start — instruction chain, tracker, specs, decision records, git/PR state, cross-checks, synthesis |
 | [gh-app](gh-app/) | Post GitHub reviews, comments, and statuses as the `gwl-agents` app instead of the user's account |
 | [pebble](pebble/) | Work protocol for the Pebble (`pb`) local issue tracker — claim, track, and close issues while coding |
-| [pi-interaction](pi-interaction/) | Drive the pi CLI headlessly — not-me code reviews, scoped subagents, JSON-mode observability |
+| [drive-pi](drive-pi/) | Drive the pi CLI headlessly — not-me code reviews, scoped subagents, JSON-mode observability |
 | [worktrees](worktrees/) | Git worktree discipline — primary checkout on main, feature work in linked worktrees, shared-tree state commits only from main |
 
 ## Installation

@@ -1,4 +1,4 @@
-# pi-interaction
+# drive-pi
 
 **Skill for driving the [pi](https://github.com/earendil-works/pi) coding
 agent CLI headlessly** — as a review colleague, a scoped-question
@@ -26,7 +26,7 @@ The skill encodes what we learned the hard way:
 Symlink into pi's skills directory:
 
 ```bash
-ln -s /path/to/gwl-agent-skills/pi-interaction ~/.pi/agent/skills/
+ln -s /path/to/gwl-agent-skills/drive-pi ~/.pi/agent/skills/
 ```
 
 ## Contents
