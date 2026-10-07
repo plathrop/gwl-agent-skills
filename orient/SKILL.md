@@ -1,5 +1,5 @@
 ---
-name: discovery
+name: orient
 description: Systematically orient in a repository at the start of a session — read the instruction chain, mine the issue tracker, specs, decision records, and git/worktree/PR state, cross-check references, and synthesize where the work is.
 ---
 
@@ -11,10 +11,10 @@ where things stand", or when resuming work in a repo after a gap.
 It is also the right preamble before recommending what to work on
 next — you cannot rank work you haven't seen.
 
-**Discovery is read-only.** It claims no issues, edits no files, opens
+**Orient is read-only.** It claims no issues, edits no files, opens
 no PRs. Its output is a synthesis for the user and orientation for the
 agent. Acting on a finding — filing a bug, claiming work, recording a
-discovery in the tracker — is a *follow-up* after you report, never part of
+finding in the tracker — is a *follow-up* after you report, never part of
 the pass itself.
 
 ## Principles
@@ -23,7 +23,7 @@ the pass itself.
   project AGENTS.md, or their equivalents) gates everything else; read
   them before touching the repo, and load any skills they name as
   required.
-- **Mine, don't list.** The value of discovery is synthesis — blocking
+- **Mine, don't list.** The value of orientation is synthesis — blocking
   chains, stale work, contradictions — not a dump of command output.
 - **Cross-check references.** The highest-value finds are broken ones: a
   decision record cited by a proposal but missing from the branch, an
@@ -109,7 +109,7 @@ gh pr view <n> --json title,baseRefName,headRefName,headRefOid,reviewDecision,re
   change branched off another unmerged change) change both the review
   diff and the merge order.
 
-### 7. Cross-checks (where discovery earns its keep)
+### 7. Cross-checks (where orientation earns its keep)
 
 - **References resolve.** Distinguish the two kinds: *local artifacts*
   (decision records, specs, in-repo runbooks) should exist on the branch
@@ -143,7 +143,7 @@ Report compactly — the user wants the shape, not the raw data:
 
 ## What not to do
 
-- Don't write, claim, or start anything during discovery.
+- Don't write, claim, or start anything during the orientation pass.
 - Don't ask the user for facts the repo can answer — verify first, ask
   only for genuine judgment calls.
 - Don't read everything fully; depth is a budget, spend it on

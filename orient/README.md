@@ -1,4 +1,4 @@
-# discovery
+# orient
 
 A skill that encodes the repository-orientation pass: what an agent
 does in the first minutes of a session in one of Grey's repos (or any
@@ -6,7 +6,7 @@ repo with similar conventions), and what it should produce.
 
 ## Why this exists
 
-Discovery kept being improvised. Each session re-derived the same
+Orientation kept being improvised. Each session re-derived the same
 sequence — read the instructions, check the tracker, look at specs,
 skim decision records, check git state — with varying thoroughness and
 no cross-checking habit. Two failure modes recurred:
@@ -54,7 +54,7 @@ individually would never have found that; comparing them did.
   apply), tracker before code (the queue tells you which code matters),
   cross-checks last (they need every earlier output to compare
   against).
-- **Discovery is read-only by construction.** No claims, no edits, no
+- **Orient is read-only by construction.** No claims, no edits, no
   PRs. This keeps it safe to run reflexively at session start without
   it turning into an unplanned state change.
 - **Depth is a budget.** Full pass when the session will do real work;
@@ -64,7 +64,7 @@ individually would never have found that; comparing them did.
 - **It composes with the other skills rather than replacing them.**
   Priority-discrepancy handling and work-ranking defer to the
   `pebble` skill; worktree discipline defers to the `worktrees` skill.
-  Discovery's job is the orientation pass and the synthesis, nothing
+  Orient's job is the orientation pass and the synthesis, nothing
   else.
 
 ## Configuration
