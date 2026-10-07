@@ -16,7 +16,8 @@ post real reviews with a verdict (approve / request changes / comment).
 
 - **Creating the PR**: use plain `gh` (Grey's personal credentials). Grey
   is the author of record for the work; the PR opens as @plathrop. Push
-  the branch and `gh pr create` exactly as you normally would.
+  the branch and `gh pr create` exactly as you normally would — but start
+  the PR body with `agent-authored` (see below).
 - **Everything after the PR exists** — reviews, PR/issue comments,
   statuses, labels — use `gh-app` so it's attributed to `gwl-agents[bot]`.
 - **Editing or merging the PR itself** (title, body, ready-for-review,
@@ -60,6 +61,21 @@ gh-app api repos/OWNER/REPO/pulls/<pr>/reviews \
 ```bash
 gh-app pr comment <pr> --body "..."
 gh-app issue comment <n> --body "..."
+```
+
+## Marking the PR as agent-authored
+
+The PR opens under Grey's identity, but the work is the agent's. Start
+the PR body with the literal text `agent-authored`, optionally followed
+by ` by <model_id>` if you know your model ID (omit it if you don't).
+This is the PR-side mirror of the review header below: it records which
+agent did the work, so the record doesn't read as if Grey wrote the
+changes.
+
+```
+agent-authored by deepseek-v4-pro
+
+<description...>
 ```
 
 ## Marking the review as an agent review

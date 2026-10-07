@@ -16,6 +16,25 @@ personal `gh` credentials. That caused two problems:
 A GitHub App fixes both: it has its own identity (`gwl-agents[bot]`), and
 with `pull_requests: write` it can post real reviews with a verdict.
 
+## Why attribution lives in the PR body
+
+A PR opens under Grey's identity (`@plathrop`) — Grey is the author of
+record — but the changes are the agent's work. The SKILL.md rule handles
+this with an `agent-authored [by <model_id>]` marker at the top of the
+PR body.
+
+The marker goes in the **PR body, not the commits**. The commit author
+field is provenance and accountability: who signs, who answers when it
+breaks, who vouches for the merged result — that is Grey, who reviews,
+signs, and stands behind what lands. A commit trailer like
+`Agent-authored-by:` would be simulated attribution: a string with no
+identity to contact or hold accountable, and it would leak into
+`shortlog`, changelog generators, and DCO checks that expect a trailer
+to name a real person.
+
+The PR body is where humans read who did the work; the commit is where
+the responsibility lives. Keep the two separate.
+
 ## How it works
 
 GitHub Apps authenticate in two steps:
