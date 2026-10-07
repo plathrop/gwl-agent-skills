@@ -26,11 +26,10 @@ PR body.
 The marker goes in the **PR body, not the commits**. The commit author
 field is provenance and accountability: who signs, who answers when it
 breaks, who vouches for the merged result — that is Grey, who reviews,
-signs, and stands behind what lands. A commit trailer like
-`Agent-authored-by:` would be simulated attribution: a string with no
-identity to contact or hold accountable, and it would leak into
-`shortlog`, changelog generators, and DCO checks that expect a trailer
-to name a real person.
+signs, and stands behind what lands. An `Agent-authored-by:` trailer
+would be a free-form string rather than an authenticated identity, and
+putting it in every commit would duplicate PR-level attribution across
+the history and surface it in tools that include full commit messages.
 
 The PR body is where humans read who did the work; the commit is where
 the responsibility lives. Keep the two separate.
