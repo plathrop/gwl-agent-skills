@@ -67,10 +67,11 @@ gh-app issue comment <n> --body "..."
 
 The PR opens under Grey's identity, but the work is the agent's. Start
 the PR body with the literal text `agent-authored`, optionally followed
-by ` by <model_id>` if you know your model ID (omit it if you don't).
-This is the PR-side mirror of the review header below: it records which
-agent did the work, so the record doesn't read as if Grey wrote the
-changes.
+by ` by <model_id>`. In pi, your model ID is the `PI_MODEL` environment
+variable (`echo $PI_MODEL`). Omit the ` by <model_id>` if you can't
+determine it. This is the PR-side mirror of the review header below: it
+records which agent did the work, so the record doesn't read as if Grey
+wrote the changes.
 
 ```
 agent-authored by deepseek-v4-pro
@@ -81,9 +82,10 @@ agent-authored by deepseek-v4-pro
 ## Marking the review as an agent review
 
 Start every review body with the literal text `agent-review`, optionally
-followed by ` by <model_id>` if you know your model ID (omit it if you
-don't). The app identity already separates you from the user; this header
-records *which* agent/model wrote it.
+followed by ` by <model_id>`. In pi, your model ID is the `PI_MODEL`
+environment variable (`echo $PI_MODEL`). Omit the ` by <model_id>` if you
+can't determine it. The app identity already separates you from the user;
+this header records *which* agent/model wrote it.
 
 ```
 agent-review by gpt-5.2
