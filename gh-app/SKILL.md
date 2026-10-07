@@ -20,8 +20,9 @@ post real reviews with a verdict (approve / request changes / comment).
   the PR body with `agent-authored` (see below).
 - **Everything after the PR exists** — reviews, PR/issue comments,
   statuses, labels — use `gh-app` so it's attributed to `gwl-agents[bot]`.
-- **Editing or merging the PR itself** (title, body, ready-for-review,
-  merge when Grey asks): also plain `gh` — the PR is Grey's.
+- **Editing the PR itself** (title, body, ready-for-review): also plain
+  `gh` — the PR is Grey's. Merging is not a `gh`/`gh-app` write at all:
+  it happens locally with `git merge --ff-only`, never through GitHub.
 - Reads are always fine with plain `gh` (see below).
 
 `gh-app` *can* technically create PRs (it's the same `gh`), but don't —
