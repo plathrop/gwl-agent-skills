@@ -18,6 +18,8 @@ codes:
 6. **Watch** — flag priority discrepancies (e.g. a P3 bug blocking a
    P1 task) with a recommendation, never silently adjusting
 7. **Recommend** — rank ready work when asked for next steps
+8. **Buckets** — recognize `[bucket]`-tagged standing epics (bugs inbox,
+   future-work backlog) and exempt them from drift/staleness flags
 
 It also covers work breakdown (epics → tasks → dependencies), a P0–P4
 priority rubric for consistent assignment, and the business rules an
@@ -49,6 +51,13 @@ blocked issues, epic close cascades).
   rubric for consistent assignment and a protocol for flagging
   discrepancies, but priority changes are recommended, never made
   silently — the tracker is a shared record of the user's judgment.
+- **Bucket epics are first-class.** An epic tagged `[bucket]` in its
+  title is a standing container (a bugs inbox or a future-work backlog),
+  not a workstream. Its fixed priority is a positioning label, not a
+  reflection of its children, so the parent/child-drift heuristic exempts
+  it — and orientation exempts it from staleness flags too. The title
+  tag is the authoritative signal: names vary by project and P4 does not
+  identify a bucket, so the tag is what an agent keys off.
 
 ## Requirements
 

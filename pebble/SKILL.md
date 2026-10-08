@@ -149,6 +149,31 @@ Note the consequence for blockers: a blocker of current P1 work is
 P0 by definition — that inversion is the most common discrepancy
 you'll find (see *Priority discrepancies*).
 
+## Bucket epics
+
+Most Pebble projects keep one or two **bucket epics**: permanent
+containers for a category of work rather than bounded deliverables.
+They never "finish"; their priority is a *fixed label* that positions
+them in the list, not a reflection of their children. The common two:
+
+- **A bugs inbox** (P0) — sits at the top so bugs surface above feature
+  work. Children carry *independent* priorities; a P3 bug in a P0
+  bucket is by design, not drift.
+- **A future/backlog grab-bag** (P4) — "someday" ideas. Every child is
+  P4. Active work leaves the bucket by *promoting the child's priority
+  and/or reparenting it under a workstream epic* — never by adjusting
+  the bucket's priority.
+
+A bucket epic is tagged `[bucket]` in its **title** (e.g.
+`Bugs [bucket]`, `Backlog [bucket]`), so the tag is visible in
+`pb list`, `pb summary`, and `pb ready` without `pb show`. The tag is
+the authoritative signal: an epic is a bucket iff its title carries
+`[bucket]` (or the project's AGENTS.md names it one). Untagged epics are
+workstreams for the *Parent/child drift* heuristic below. In repos that
+predate the convention, an evergreen description ("evergreen", "parking
+lot", "holding pen", "standing epic") is a hint that an untagged epic
+may be a bucket. When you create a bucket epic, tag its title.
+
 ## Priority discrepancies
 
 Priorities and the dependency graph tell two stories about urgency, and
@@ -163,10 +188,15 @@ Watch for:
   is at least as urgent as what it blocks (a blocker of P1 work is P0
   by the convention above). Either the blocker should be raised or the
   blocked issue should be lowered — one of the two ratings is wrong.
-- **Parent/child drift** — a P1 epic whose children are all P4 is
+- **Parent/child drift** — a *workstream* epic's priority should
+  roughly reflect its children: a P1 epic whose children are all P4 is
   probably a stale epic; a P4 epic with a P1 child is probably a child
-  with a mistyped priority. Epic priority should roughly reflect its
-  children.
+  with a mistyped priority. Bucket epics are exempt (see *Bucket epics*):
+  their priority is a fixed label, not a child average. Before flagging
+  drift, check the epic's title for the `[bucket]` tag. The one bucket
+  case still worth flagging is a *non-P4 child filed in a P4 backlog* —
+  that child is active work in the wrong place; promote and/or reparent
+  the child, don't touch the bucket.
 
 These surface in any view that shows the graph or hierarchy:
 `pb dep tree <id>`, `pb blocked -v`, `pb summary`, and `pb list --parent`.
@@ -183,8 +213,10 @@ When you spot a discrepancy:
 3. **If the user agrees**, make the change and add a
    `pb comments add` noting why, so the history explains the jump.
 4. Sanity-check at creation time too: before wiring
-   `pb dep add` / `--blocked-by` or parenting a child under an epic,
-   look at the priorities you're about to connect.
+   `pb dep add` / `--blocked-by` or parenting a child under a
+   *workstream* epic, look at the priorities you're about to connect.
+   (The bucket-epic exemption from *Parent/child drift* applies here —
+   filing a P3 bug under a P0 bugs bucket is fine.)
 
 ## Recommending next work
 

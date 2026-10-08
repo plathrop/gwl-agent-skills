@@ -66,8 +66,10 @@ pb dep tree <epic>    # for each active epic
 
 - Build the picture: in-flight epics, the ready queue, blocking chains.
 - Flag priority discrepancies per the pebble skill — blockers rated
-  below the work they block, parents drifting from their children.
-  Recommend a fix; don't apply it silently.
+  below the work they block, parents drifting from their children
+  (workstream epics only; epics tagged `[bucket]` in their title are
+  exempt — see the pebble skill). Recommend a fix; don't apply it
+  silently.
 
 ### 4. Specs and changes (if the repo uses openspec)
 
@@ -127,8 +129,9 @@ gh pr view <n> --json title,baseRefName,headRefName,headRefOid,reviewDecision,re
   worktree's.)
 - **Priorities agree with the dependency graph** (per the pebble
   skill).
-- **Stale things** get named: untouched in-progress issues, lingering
-  worktrees, branches whose PRs are gone.
+- **Stale things** get named: untouched in-progress issues (bucket
+  epics — title-tagged `[bucket]` — are exempt: standing epics never
+  close), lingering worktrees, branches whose PRs are gone.
 
 ### 8. Synthesize
 
