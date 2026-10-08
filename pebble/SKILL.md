@@ -174,6 +174,18 @@ predate the convention, an evergreen description ("evergreen", "parking
 lot", "holding pen", "standing epic") is a hint that an untagged epic
 may be a bucket. When you create a bucket epic, tag its title.
 
+When you initialize a repo (`pb init`), create the two buckets as
+scaffolding rather than retrofitting them later:
+
+```bash
+pb create "Bugs [bucket]" -t epic -p 0 -d "Evergreen bucket epic for filing bugs."
+pb create "Backlog [bucket]" -t epic -p 4 -d "Evergreen bucket epic for filing future work."
+```
+
+Default to both — an empty bucket is cheap and a missing one means
+retrofitting later. Skip one only if the repo clearly won't collect that
+kind of work.
+
 ## Priority discrepancies
 
 Priorities and the dependency graph tell two stories about urgency, and
