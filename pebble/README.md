@@ -69,8 +69,9 @@ blocked issues, epic close cascades).
   an issue someone else is on succeeds silently (`claimedIds: []` means
   nothing was flipped). The skill tells the agent to read the claim
   response and surface contention instead of assuming the claim made
-  the issue theirs. Verified against the CLI source (state.ts
-  `claimWithCascade`, v0.2.0).
+  the issue theirs. Verified against the CLI source ([`claimWithCascade`
+  in state.ts](https://github.com/markmdev/pebble/blob/main/src/cli/lib/state.ts#L572),
+  v0.2.0).
 - **Bucket epics are first-class.** An epic tagged `[bucket]` in its
   title is a standing container (a bugs inbox or a future-work backlog),
   not a workstream. Its fixed priority is a positioning label, not a
@@ -96,10 +97,11 @@ behavior).
 
 ## Reference
 
-Upstream Pebble docs (full source at `~/Source/external/pebble/`):
+Upstream Pebble docs ([source repo](https://github.com/markmdev/pebble/);
+local checkout at `~/Source/external/pebble/`):
 
-- `docs/cli-reference.md` — complete command/flag reference
-- `CLI_EXAMPLES.md` — example commands with sample output
+- [docs/cli-reference.md](https://github.com/markmdev/pebble/blob/main/docs/cli-reference.md) — complete command/flag reference
+- [CLI_EXAMPLES.md](https://github.com/markmdev/pebble/blob/main/CLI_EXAMPLES.md) — example commands with sample output
 
 Note: the docs occasionally drift from the shipped CLI (e.g. shorthand
 flags that don't exist). Flag usage in this skill was verified against
