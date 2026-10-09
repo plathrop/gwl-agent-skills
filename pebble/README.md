@@ -15,11 +15,17 @@ codes:
 3. **Record** — leave `pb comments` when making decisions or discoveries
 4. **Close** — `pb close <id> --reason "<what changed>"` when done
 5. **File** — create new issues for work discovered along the way
-6. **Watch** — flag priority discrepancies (e.g. a P3 bug blocking a
+   (search first to dedupe)
+6. **Place** — pebbles have parents by default: bugs under the bugs
+   bucket, future work under the backlog bucket, everything else under
+   its workstream epic; if there's no home, ask rather than orphan
+7. **Watch** — flag priority discrepancies (e.g. a P3 bug blocking a
    P1 task) with a recommendation, never silently adjusting
-7. **Recommend** — rank ready work when asked for next steps
-8. **Buckets** — recognize `[bucket]`-tagged standing epics (bugs inbox,
+8. **Recommend** — rank ready work when asked for next steps
+9. **Buckets** — recognize `[bucket]`-tagged standing epics (bugs inbox,
    future-work backlog) and exempt them from drift/staleness flags
+10. **Claim honestly** — claiming flags work in progress, it doesn't
+    lock it; surface contention instead of silently re-claiming
 
 It also covers work breakdown (epics → tasks → dependencies), a P0–P4
 priority rubric for consistent assignment, and the business rules an
@@ -51,6 +57,20 @@ blocked issues, epic close cascades).
   rubric for consistent assignment and a protocol for flagging
   discrepancies, but priority changes are recommended, never made
   silently — the tracker is a shared record of the user's judgment.
+- **Pebbles have parents by default.** Orphaned issues lose context and
+  clutter the tree views, so every new issue gets a home: bugs under
+  the bugs bucket, future work under the backlog bucket, everything
+  else under its workstream epic. When no home exists, the agent asks
+  rather than orphaning — and epic creation stays with the user
+  (recommend, don't create unprompted), because epic scope is the same
+  kind of judgment as priorities.
+- **Claiming flags, it doesn't lock.** `pb claim` sets `in_progress` and
+  nothing more — no assignee exists in the data model, and re-claiming
+  an issue someone else is on succeeds silently (`claimedIds: []` means
+  nothing was flipped). The skill tells the agent to read the claim
+  response and surface contention instead of assuming the claim made
+  the issue theirs. Verified against the CLI source (state.ts
+  `claimWithCascade`, v0.2.0).
 - **Bucket epics are first-class.** An epic tagged `[bucket]` in its
   title is a standing container (a bugs inbox or a future-work backlog),
   not a workstream. Its fixed priority is a positioning label, not a
@@ -76,7 +96,7 @@ behavior).
 
 ## Reference
 
-Upstream Pebble docs (full source at `~/Source/pebble/`):
+Upstream Pebble docs (full source at `~/Source/external/pebble/`):
 
 - `docs/cli-reference.md` — complete command/flag reference
 - `CLI_EXAMPLES.md` — example commands with sample output

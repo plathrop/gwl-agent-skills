@@ -60,6 +60,21 @@ If the claim fails because of open blockers, run `pb blocked -v` or
 `pb dep tree <id>` to see the blocker chain, then either work the
 blocker first or report back to the user.
 
+**Claiming is flagging, not locking.** `pb claim` sets status
+`in_progress`; it does not assign the issue to you or exclude anyone
+else. Re-claiming an issue someone else may be working on *succeeds
+silently* — an already-`in_progress` target is simply skipped. Read the
+response: `claimedIds` lists exactly the issues you flipped, so an empty
+`claimedIds` means you claimed nothing new. (Re-claiming is also a
+repair: if a child is `in_progress` but an open parent has slipped
+back to `open`, claiming the child re-claims the parent.)
+
+Before claiming an issue that is already `in_progress` and that you
+didn't claim earlier in this session, check `pb show <id>` for comments
+and the last event `source` (the worktree name) to see who is likely
+on it. If it isn't yours, say so in your reply — surface the contention
+and proceed unless the user redirects you.
+
 ### 3. Record progress
 
 Leave a trail as you work — comments are cheap, and the log is the
@@ -95,13 +110,37 @@ instead of filing a duplicate:
 
 ```bash
 pb search "logout redirect"   # dedupe before creating
-pb create "Fix flaky logout redirect" -t bug -p 1
+pb create "Fix flaky logout redirect" -t bug -p 1 --parent <bugs-bucket>
 pb create "Refactor auth module" -t task --parent <epic-id>
 ```
 
-See *Structuring larger work* below for epics and dependencies.
+Every pebble gets a home — see *Where new pebbles go* below.
 
 ## Shaping the tracker
+
+### Where new pebbles go
+
+Unless the user asks otherwise, give every new pebble a parent —
+orphaned issues lose context and clutter the tree views. Place by
+kind:
+
+- **Bugs** go under the bugs bucket (`Bugs [bucket]`).
+- **Future/backlog ideas** go under the backlog bucket
+  (`Backlog [bucket]`).
+- **Everything else** goes under the workstream epic it belongs to.
+
+If no appropriate epic exists, **stop and ask the user where it
+belongs** — don't file it silently orphaned, and don't create a
+one-task epic to avoid asking. Epic creation is a scoping decision and
+belongs to the user: when work looks like a distinct workstream,
+*recommend* an epic ("this looks like it deserves its own epic — want
+me to create one?"), but don't create workstream epics unprompted.
+The sanctioned exception is the bucket scaffolding at `pb init` (see
+*Bucket epics*).
+
+In repos that predate the convention, the standard homes may not
+exist yet — if the buckets are missing, ask the user whether to create
+them.
 
 ### Structuring larger work
 
@@ -276,7 +315,10 @@ mechanical ordering.
   `pb ui` serves: `pb ui --no-open --port <n>` then
   `curl -X PUT localhost:<n>/api/issues/<id> -H 'Content-Type: application/json' -d '{"type":"epic"}'`.
   The data model supports type changes; only the CLI omits the flag.
-- You **cannot** claim or start an issue with open blockers.
+- You **cannot** claim or start an issue with open blockers. Note
+  that blockedness is determined by open `blockedBy` dependencies, not
+  by status: an issue carrying status `blocked` with no open blockers
+  can be claimed, and the claim simply flips it to `in_progress`.
 - Closing an epic is refused while any child is still open — close or
   reparent the children first.
 - Dependency cycles are rejected.
