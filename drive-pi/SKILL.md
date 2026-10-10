@@ -28,8 +28,9 @@ answer — see "Dead reviews" below.
 A fresh pi instance on a cheap strong model is a
 colleague you can hire for cents. The pattern that works:
 
-*(Model names and prices below are from when this was written and will
-drift — the pattern, not the model, is the durable part.)*
+*(Model names below are from when this was written and will drift —
+the pattern, not the model, is the durable part. See the README for
+what reviews cost at the time of writing.)*
 
 ```bash
 # From the repo root, with the branch under review CHECKED OUT
@@ -101,10 +102,9 @@ and the timeout kills it before the verdict. Twice observed. The fence:
    rejected-with-reason, recorded on the PR thread or in the commit. If
    a finding changes the design rationale, amend the decision record
    honestly.
-5. **Report the cost** in the checkpoint (at the time of writing, a full
-   kimi-coding/k3 review ran ~$0.50; narrow passes ~$0.05). The number
-   keeps the practice honest even when the subscription makes it feel
-   free.
+5. **Report the cost** in the checkpoint (the JSON event stream carries
+   per-message usage and cost; sum them). The number keeps the practice
+   honest even when the subscription makes it feel free.
 
 ## Etiquette
 

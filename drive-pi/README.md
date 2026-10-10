@@ -7,9 +7,12 @@ subagent, or a one-shot generator with full process observability.
 ## Why this exists
 
 A fresh pi instance on a cheap strong model is a *not-me reviewer* — a
-colleague with no stake in the work, no memory of writing it, and no
-politeness about it. Commissioning one is the fastest known way to get
-real findings on your own code for ~$0.50.
+ colleague with no stake in the work, no memory of writing it, and no
+ politeness about it. Commissioning one is the fastest known way to get
+real findings on your own code cheaply. For calibration, measured at
+the time of writing (2026, model names and prices drift): a full
+review on kimi-coding/k3 ran ~$0.50, narrow passes ~$0.05, and a
+deepseek-v4-pro full review of a small repo ran ~$0.20.
 
 The skill encodes what we learned the hard way:
 

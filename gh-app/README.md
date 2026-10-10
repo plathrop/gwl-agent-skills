@@ -57,8 +57,9 @@ gh-app pr review 123 --request-changes --body "..."   # as the app
 One-time, per machine:
 
 1. Create a GitHub App (GitHub → Settings → Developer settings →
-   GitHub Apps → New GitHub App) with at least `pull requests: write`
-   and `issues: write` permissions.
+   GitHub Apps → New GitHub App) with at least `pull requests: write`,
+   `issues: write`, and `statuses: write` (commit statuses)
+   permissions.
 2. Generate a private key in the app's settings and save it locally.
 3. Install the app on the repos it should act on, and note the
    installation ID (shown on the app's installation settings page).
@@ -118,6 +119,7 @@ must never be committed to a repository.
   installed repos and granted permissions — far less dangerous than a
   long-lived personal token.
 - Grant the app only the permissions your agents need (reviews and
-  comments need `pull requests: write` and `issues: write`). If you
+  comments need `pull requests: write` and `issues: write`; commit
+  statuses need `statuses: write`). If you
   grant broader permissions for other agent tasks, treat the private
   key accordingly.
