@@ -59,22 +59,25 @@ everyone sees it.
 
 ## Construction backstops
 
-Installed by `scripts/setup-worktree-backstops.sh` (idempotent; rerun
-per clone and after updating the canonical hook).
+Installed by `scripts/setup-ledger-merge.sh` (idempotent; rerun per
+clone and after updating the script).
 
-- **Pre-commit hook** (versioned via `core.hooksPath=.githooks`):
-  reject commits touching `.pebble/issues.jsonl` on any branch but
-  main, with an error pointing at this document. Turns discipline slips
-  into immediate, educational errors.
 - **Merge driver**: `.gitattributes` entry
   `.pebble/issues.jsonl merge=pebble` with driver
   `pb merge %A %B -o %A`. When an accident slips through (or a clone
-  lacks hooks), merges reconcile by event-union-with-dedupe instead of
+  lacks the driver), merges reconcile by event-union-with-dedupe instead of
   line-soup. Event-order assumption validated 2026-08-15 on hearth:
   `pb merge` emits events sorted by timestamp and dedupes on
   `issueId-timestamp-type`, so a merged ledger is chronologically
   ordered with no duplicated shared history. (Manual recipe for
-  conflicts: SKILL.md, "Resolving a ledger merge conflict".)
+  conflicts: appendix, below.)
+- **A pre-commit guard hook was tried and dropped** (removed
+  2026-10-09): it rejected ledger commits on any branch but main,
+  with an error pointing at this document. The reasoning: discipline
+  and the merge driver carry the protection; hooks that reject
+  legitimate workflows (a deliberate `--local` ledger commit, a rescue)
+  erode trust and get disabled, and a disabled backstop is worse than
+  none. The setup script removes any it previously installed.
 
 ## Worktree ergonomics
 
@@ -100,7 +103,7 @@ the primary checkout while it sits on a feature branch — or a built-in
 ## Appendix: resolving a ledger merge conflict
 
 If two branches both carry `.pebble/issues.jsonl` changes despite the
-discipline (pre-2026-08-15 habits, a clone lacking the hook), do NOT
+discipline (pre-2026-08-15 habits, a clone lacking the merge driver), do NOT
 resolve the conflict by hand. Line-picking through an append-only JSONL
 log produces duplicate and out-of-order events. Reconcile by event union
 with `pb merge`, which dedupes (key: `issueId-timestamp-type`) and sorts

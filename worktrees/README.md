@@ -24,27 +24,28 @@ used to meet it only as a section of another skill's protocol and
 conflated the two; work placement is its own concern and gets its own
 skill (2026-09-09).
 
-## Installing the backstops
+## Installing the ledger merge backstop
 
-For a repo with shared working-tree state, install the guard hook and
-merge driver with:
+For a repo with shared working-tree state (e.g. a pebble ledger),
+install the event-union merge driver and the worktree-convention
+directory with:
 
 ```bash
-~/Source/gwl-agent-skills/worktrees/scripts/setup-worktree-backstops.sh /path/to/repo
+<path-to-this-repo>/worktrees/scripts/setup-ledger-merge.sh /path/to/repo
 ```
 
 The script is idempotent and will:
 
-- copy `scripts/pre-commit` to `<repo>/.githooks/pre-commit` (rejects
-  ledger commits on non-main branches) and make it executable
 - ensure `.gitattributes` contains `.pebble/issues.jsonl merge=pebble`
-- set repo-local git config: `core.hooksPath=.githooks`,
-  `merge.pebble.name`, and `merge.pebble.driver="pb merge %A %B -o %A"`
-- create `~/Source/worktrees/<repo-name>` for the worktree convention
+- set repo-local git config: `merge.pebble.name`, and
+  `merge.pebble.driver="pb merge %A %B -o %A"`
+- remove the pre-commit guard hook an older version of this skill
+  installed, if one is present (pre-commit hooks are no longer part of
+  the discipline)
+- create the worktree-convention directory for this repo
 
-Re-run it for each clone and after updating the canonical hook. It
-refuses to overwrite existing different hooks/config; integrate those
-manually first.
+Re-run it for each clone and after updating the script. It refuses to
+overwrite existing different config; integrate those manually first.
 
 ## Rationale and incident history
 

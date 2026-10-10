@@ -43,15 +43,18 @@ git worktree remove ~/Source/worktrees/<project>/<feature>
   force-pushing the feature branch is fine — it owns nothing outside
   itself.
 
-## Backstops (belt and suspenders)
+## Ledger merge backstop
 
-Discipline slips happen, so a repo can install construction backstops
-with `scripts/setup-worktree-backstops.sh` from this skill: a pre-commit
-hook that rejects shared-ledger changes on any branch but main, and a
-git merge driver that reconciles ledger files by event-union instead of
-line-soup. If a pre-commit hook rejects your commit with a pointer to
-this discipline, that's the backstop working — move the change to the
-primary checkout.
+Discipline slips happen, so a repo can install a construction
+backstop with `scripts/setup-ledger-merge.sh` from this skill: a git
+merge driver (`.gitattributes` entry plus `pb merge`) that reconciles
+an append-only ledger (e.g. `.pebble/issues.jsonl`) by event-union
+instead of line-soup when a merge does collide. The script is
+idempotent and also removes the pre-commit guard hook an older version
+installed, if one is present — the discipline doesn't rely on hooks.
+If a ledger merge conflicts, don't hand-pick lines: see
+[WORKTREE-WORKFLOW.md](WORKTREE-WORKFLOW.md) for the reconciliation
+recipe.
 
 ## Why this exists
 
