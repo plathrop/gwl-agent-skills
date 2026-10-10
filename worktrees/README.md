@@ -49,6 +49,28 @@ The script is idempotent and will:
 Re-run it for each clone and after updating the script. It refuses to
 overwrite existing different config; integrate those manually first.
 
+### One-time global alternative
+
+The install splits in two: the `.gitattributes` entry is *committed*, so
+it travels with every clone — but the git config is machine state and
+does not, which is why a fresh clone of a pebble repo silently falls
+back to textual merge until the script runs. If you work in
+pebble-tracked repos regularly, you can set the merge driver in your
+global git config once per machine instead of per clone:
+
+```bash
+git config --global merge.pebble.driver 'pb merge %A %B -o %A'
+git config --global merge.pebble.name 'Pebble ledger event-union merge'
+```
+
+The driver is namespaced (`merge.pebble.*`) and inert in any repo
+without a `merge=pebble` attribute, so this is safe on machines that
+have `pb` installed. Only set it there: if the driver fires and `pb`
+is missing, the merge errors out (loud, and arguably right for an
+append-only ledger — but a surprise on a machine that never touches
+pebble). The per-repo config the script writes uses the same values,
+so the two coexist without conflict.
+
 ## Rationale and incident history
 
 See [WORKTREE-WORKFLOW.md](WORKTREE-WORKFLOW.md): the two incidents that
