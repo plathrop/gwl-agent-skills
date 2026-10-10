@@ -84,9 +84,10 @@ agent-authored by deepseek-v4-pro
 ## Marking the review as an agent review
 
 Start every review body with the literal text `agent-review`, optionally
-followed by ` by <model_id>`. In pi, your model ID is the `PI_MODEL`
-environment variable (`echo $PI_MODEL`). Omit the ` by <model_id>` if you
-can't determine it. The app identity already separates you from the user;
+followed by ` by <model_id>`. Use whatever model ID your harness
+exposes, if it exposes one (pi, for example, sets `PI_MODEL`; check
+`echo $PI_MODEL` there). Omit the ` by <model_id>` if you can't
+determine it. The app identity already separates you from the user;
 this header records *which* agent/model wrote it.
 
 ```

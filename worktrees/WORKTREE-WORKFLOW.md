@@ -72,10 +72,11 @@ clone and after updating the script).
 
 - **Merge driver**: `.gitattributes` entry
   `.pebble/issues.jsonl merge=pebble` with driver
-  `pb merge %A %B -o %A`. When an accident slips through (or a clone
-  lacks the driver), merges reconcile by event-union-with-dedupe instead of
-  line-soup. Event-order assumption validated 2026-08-15 on a live
-  pebble-tracked repo:
+  `pb merge %A %B -o %A`. When an accident slips through, merges
+  reconcile by event-union-with-dedupe instead of line-soup. A clone
+  lacking the driver falls back to textual merge — use the manual
+  recipe in the appendix. Event-order assumption validated 2026-08-15
+  on a live pebble-tracked repo:
   `pb merge` emits events sorted by timestamp and dedupes on
   `issueId-timestamp-type`, so a merged ledger is chronologically
   ordered with no duplicated shared history. (Manual recipe for
