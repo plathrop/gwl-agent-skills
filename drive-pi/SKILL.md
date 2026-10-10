@@ -5,6 +5,12 @@ description: Drive the pi coding agent CLI headlessly — print/JSON/RPC modes, 
 
 # Driving pi (headless)
 
+pi is driven as a subprocess — prompt in, text/JSONL on stdout — so
+nothing here assumes the host harness is pi itself. Any harness that
+can spawn processes (or a human at a terminal) can commission these
+reviews; the skill just needs to be loadable by the agent doing the
+driving.
+
 Pi has three modes that cover nearly every headless use case. Choose by
 how much conversation and observability you need:
 
@@ -19,8 +25,11 @@ answer — see "Dead reviews" below.
 
 ## The not-me review pattern
 
-A fresh pi instance on a cheap strong model (kimi-coding/k3) is a
+A fresh pi instance on a cheap strong model is a
 colleague you can hire for cents. The pattern that works:
+
+*(Model names and prices below are from when this was written and will
+drift — the pattern, not the model, is the durable part.)*
 
 ```bash
 # From the repo root, with the branch under review CHECKED OUT
@@ -92,9 +101,10 @@ and the timeout kills it before the verdict. Twice observed. The fence:
    rejected-with-reason, recorded on the PR thread or in the commit. If
    a finding changes the design rationale, amend the decision record
    honestly.
-5. **Report the cost** in the checkpoint (a full k3 review is ~$0.50;
-   narrow passes ~$0.05). The number keeps the practice honest even when
-   the subscription makes it feel free.
+5. **Report the cost** in the checkpoint (at the time of writing, a full
+   kimi-coding/k3 review ran ~$0.50; narrow passes ~$0.05). The number
+   keeps the practice honest even when the subscription makes it feel
+   free.
 
 ## Etiquette
 
@@ -106,4 +116,5 @@ counts. Keep the record.
 
 ## See also
 
-- `docs/pi-notes.md` in the hearth repo for SDK-level API notes.
+- The [pi repository](https://github.com/earendil-works/pi) for
+  CLI/SDK-level API notes.

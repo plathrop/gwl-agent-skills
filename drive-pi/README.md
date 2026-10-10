@@ -23,10 +23,13 @@ The skill encodes what we learned the hard way:
 
 ## Install
 
-Symlink into pi's skills directory:
+Load the skill into whichever harness you drive pi from — the agent
+commissioning the reviews is the one that reads it, and that agent
+doesn't have to be pi itself. The usual pattern is a symlink from
+your harness's skills directory:
 
 ```bash
-ln -s /path/to/gwl-agent-skills/drive-pi ~/.pi/agent/skills/
+ln -s /path/to/gwl-agent-skills/drive-pi <your-harness-skills-dir>/
 ```
 
 ## Contents
