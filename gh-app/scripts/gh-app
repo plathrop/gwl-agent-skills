@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gh-app — run `gh` authenticated as the gwl-agents GitHub App.
+# gh-app — run `gh` authenticated as your GitHub App.
 #
 # Use this instead of `gh` for anything an agent posts to GitHub
 # (reviews, PR/issue comments, statuses) so the action is attributed to

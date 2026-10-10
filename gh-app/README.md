@@ -1,7 +1,7 @@
 # gh-app
 
-Post to GitHub as the `gwl-agents` GitHub App instead of the user's
-personal account.
+Post to GitHub as your own GitHub App instead of your personal
+account.
 
 ## Why
 
@@ -13,23 +13,24 @@ personal `gh` credentials. That caused two problems:
 2. **No real reviews** — agents could only leave comments, never a proper
    "changes requested" verdict.
 
-A GitHub App fixes both: it has its own identity (`gwl-agents[bot]`), and
-with `pull_requests: write` it can post real reviews with a verdict.
+A GitHub App fixes both: it has its own identity (e.g. `your-app[bot]`),
+and with `pull_requests: write` it can post real reviews with a verdict.
 
 ## Why attribution lives in the PR body
 
-A PR opens under Grey's identity (`@plathrop`) — Grey is the author of
+A PR opens under the user's identity — the user is the author of
 record — but the changes are the agent's work. The SKILL.md rule handles
 this with an `agent-authored [by <model_id>]` marker at the top of the
 PR body.
 
-The marker goes in the **PR body, not the commits**. The commit author
-field is provenance and accountability: who signs, who answers when it
-breaks, who vouches for the merged result — that is Grey, who reviews,
-signs, and stands behind what lands. An `Agent-authored-by:` trailer
-would be a free-form string rather than an authenticated identity, and
-putting it in every commit would duplicate PR-level attribution across
-the history and surface it in tools that include full commit messages.
+The marker goes in the **PR body, not the commits**. The commit
+author field is provenance and accountability: who signs, who answers
+when it breaks, who vouches for the merged result — that is the user,
+who reviews, signs, and stands behind what lands. An
+`Agent-authored-by:` trailer would be a free-form string rather than an
+authenticated identity, and putting it in every commit would duplicate
+PR-level attribution across the history and surface it in tools that
+include full commit messages.
 
 The PR body is where humans read who did the work; the commit is where
 the responsibility lives. Keep the two separate.
@@ -48,25 +49,28 @@ GitHub Apps authenticate in two steps:
 `fetch`).
 
 ```
-gh-app pr review 123 --request-changes --body "..."   # as gwl-agents[bot]
+gh-app pr review 123 --request-changes --body "..."   # as the app
 ```
 
 ## Setup
 
 One-time, per machine:
 
-1. Create the GitHub App (done — `gwl-agents`, app ID `4608186`).
+1. Create a GitHub App (GitHub → Settings → Developer settings →
+   GitHub Apps → New GitHub App) with at least `pull requests: write`
+   and `issues: write` permissions.
 2. Generate a private key in the app's settings and save it locally.
-3. Install the app on the repos it should act on.
-4. Write the local config:
+3. Install the app on the repos it should act on, and note the
+   installation ID (shown on the app's installation settings page).
+4. Write the local config with your app's values:
 
 ```bash
 mkdir -p ~/.config/gh-app
 install -m 600 /path/to/downloaded-key.pem ~/.config/gh-app/private-key.pem
 cat > ~/.config/gh-app/config.json <<EOF
 {
-  "app_id": 4608186,
-  "installation_id": 154042224,
+  "app_id": 123456,
+  "installation_id": 98765432,
   "private_key": "$HOME/.config/gh-app/private-key.pem"
 }
 EOF
@@ -113,6 +117,7 @@ must never be committed to a repository.
 - Installation tokens expire after ~1 hour and are scoped to the app's
   installed repos and granted permissions — far less dangerous than a
   long-lived personal token.
-- The app holds broad permissions (`contents`, `secrets`, `workflows`,
-  `security_events`, ...) by design — future agent tasks will use them,
-  not just reviews. Treat the private key accordingly.
+- Grant the app only the permissions your agents need (reviews and
+  comments need `pull requests: write` and `issues: write`). If you
+  grant broader permissions for other agent tasks, treat the private
+  key accordingly.

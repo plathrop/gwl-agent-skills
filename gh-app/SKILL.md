@@ -1,28 +1,29 @@
 ---
 name: gh-app
-description: Post GitHub reviews, comments, and statuses as the gwl-agents GitHub App instead of the user's personal account. Use whenever an agent needs to write to GitHub — post a PR review (including a real "changes requested" verdict), comment on a PR or issue, or set a status — so the action is attributed to the app, not the user.
+description: Post GitHub reviews, comments, and statuses as your GitHub App instead of the user's personal account. Use whenever an agent needs to write to GitHub — post a PR review (including a real "changes requested" verdict), comment on a PR or issue, or set a status — so the action is attributed to the app, not the user.
 ---
 
-# Posting to GitHub as the gwl-agents app
+# Posting to GitHub as your app
 
-Agents act on GitHub through the **`gwl-agents` GitHub App**, not the
-user's personal account. The app has its own identity (`gwl-agents[bot]`),
-so anything you post is unambiguously attributed to the agent, and you can
-post real reviews with a verdict (approve / request changes / comment).
+Agents act on GitHub through a **GitHub App** you control, not the
+user's personal account. The app has its own bot identity (e.g.
+`your-app[bot]`), so anything you post is unambiguously attributed to
+the agent, and you can post real reviews with a verdict (approve /
+request changes / comment).
 
 ## The one rule
 
 **Use `gh-app` for every write to GitHub — except creating the PR itself.**
 
-- **Creating the PR**: use plain `gh` (Grey's personal credentials). Grey
-  is the author of record for the work; the PR opens as @plathrop. Push
-  the branch and `gh pr create` exactly as you normally would — but start
-  the PR body with `agent-authored` (see below).
+- **Creating the PR**: use plain `gh` (the user's personal credentials).
+  The user is the author of record for the work; the PR opens as them.
+  Push the branch and `gh pr create` exactly as you normally would — but
+  start the PR body with `agent-authored` (see below).
 - **Everything after the PR exists** — reviews, PR/issue comments,
-  statuses, labels — use `gh-app` so it's attributed to `gwl-agents[bot]`.
+  statuses, labels — use `gh-app` so it's attributed to the app's bot
+  identity.
 - **Editing the PR itself** (title, body, ready-for-review): also plain
-  `gh` — the PR is Grey's. Merging is not a `gh`/`gh-app` write at all:
-  it happens locally with `git merge --ff-only`, never through GitHub.
+  `gh` — the PR is the user's.
 - Reads are always fine with plain `gh` (see below).
 
 `gh-app` *can* technically create PRs (it's the same `gh`), but don't —
@@ -66,13 +67,13 @@ gh-app issue comment <n> --body "..."
 
 ## Marking the PR as agent-authored
 
-The PR opens under Grey's identity, but the work is the agent's. Start
+The PR opens under the user's identity, but the work is the agent's. Start
 the PR body with the literal text `agent-authored`, optionally followed
 by ` by <model_id>`. In pi, your model ID is the `PI_MODEL` environment
 variable (`echo $PI_MODEL`). Omit the ` by <model_id>` if you can't
 determine it. This is the PR-side mirror of the review header below: it
-records which agent did the work, so the record doesn't read as if Grey
-wrote the changes.
+records which agent did the work, so the record doesn't read as if the
+user wrote the changes.
 
 ```
 agent-authored by deepseek-v4-pro
