@@ -1,14 +1,19 @@
 # The worktree workflow: a design note
 
-*2026-08-15. Decided by Grey and Remi after two incidents: stranded
-pebble events riding an unmerged feature branch (2026-08-14) and a
-textual-merge fight over `.pebble/issues.jsonl` during a rebase
-(2026-08-15). Moved out of the pebble skill into its own skill
-2026-09-09: the discipline is about where work physically happens and
-only incidentally about pebble — agents kept finding it only when they
-loaded the pebble skill, then conflating the two. Applies to every repo
-in the household, with the ledger rules biting hardest where pebble is
-in use.*
+*A design note. The convention below is portable — any team or agent
+setup can adopt it. The names, paths, and dates in what follows are
+the historical record of how it was derived and verified; the
+load-bearing content is the measured tool behaviors and the discipline
+they motivate.*
+
+*2026-08-15. Motivated by two incidents: stranded pebble events riding
+an unmerged feature branch (2026-08-14) and a textual-merge fight over
+`.pebble/issues.jsonl` during a rebase (2026-08-15). Moved out of the
+pebble skill into its own skill 2026-09-09: the discipline is about
+where work physically happens and only incidentally about pebble —
+agents kept finding it only when they loaded the pebble skill, then
+conflating the two. It applies to any repo that adopts it, with the
+ledger rules biting hardest where pebble is in use.*
 
 ## The problem
 
@@ -69,7 +74,8 @@ clone and after updating the script).
   `.pebble/issues.jsonl merge=pebble` with driver
   `pb merge %A %B -o %A`. When an accident slips through (or a clone
   lacks the driver), merges reconcile by event-union-with-dedupe instead of
-  line-soup. Event-order assumption validated 2026-08-15 on hearth:
+  line-soup. Event-order assumption validated 2026-08-15 on a live
+  pebble-tracked repo:
   `pb merge` emits events sorted by timestamp and dedupes on
   `issueId-timestamp-type`, so a merged ledger is chronologically
   ordered with no duplicated shared history. (Manual recipe for
@@ -92,8 +98,9 @@ clone and after updating the script).
 
 ## Transition
 
-Adopted household-wide. (The original note said "when hearth's PR #12
-merges" — it merged 2026-08-15; the discipline has been live since.)
+Live since 2026-08-15. (The original internal note tied adoption to a
+specific PR's merge; it merged that day, and the discipline has been
+in force since.)
 
 ## Upstream
 

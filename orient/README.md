@@ -1,8 +1,10 @@
 # orient
 
 A skill that encodes the repository-orientation pass: what an agent
-does in the first minutes of a session in one of Grey's repos (or any
-repo with similar conventions), and what it should produce.
+does in the first minutes of a session in a repo with these
+conventions (pebble tracker, worktree discipline, decision records),
+what it should produce, and how it generalizes to repos with only
+some of them.
 
 ## Why this exists
 
