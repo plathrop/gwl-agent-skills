@@ -81,7 +81,7 @@ case "$common_dir" in
 esac
 primary_root=$(CDPATH= cd -- "$(dirname -- "$common_dir")" && pwd)
 project=$(basename "$primary_root")
-worktree_parent="${WORKTREES_ROOT:-$HOME/Source/worktrees}/$project"
+worktree_parent="${WORKTREES_ROOT:-$HOME/worktrees}/$project"
 mkdir -p "$worktree_parent"
 
 cat <<EOF

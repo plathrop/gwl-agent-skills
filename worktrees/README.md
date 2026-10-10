@@ -1,10 +1,11 @@
 # Worktrees Skill
 
-Agent skill for the household's git worktree discipline: the primary
-checkout rests on `main`, feature work happens in linked worktrees at
-`~/Source/worktrees/<project>/<feature>`, and shared working-tree state
-(append-only ledgers and the like) is committed only from the primary
-checkout.
+Agent skill for a git worktree discipline: the primary checkout rests on
+`main`, feature work happens in linked worktrees outside the checkout
+under a fixed worktree root (default convention
+`~/worktrees/<project>/<feature>`; set `WORKTREES_ROOT` or adjust to
+your layout), and shared working-tree state (append-only ledgers and
+the like) is committed only from the primary checkout.
 
 ## What the skill does
 
@@ -43,6 +44,7 @@ The script is idempotent and will:
   installed, if one is present (pre-commit hooks are no longer part of
   the discipline)
 - create the worktree-convention directory for this repo
+  (`$WORKTREES_ROOT` or `~/worktrees` by default)
 
 Re-run it for each clone and after updating the script. It refuses to
 overwrite existing different config; integrate those manually first.

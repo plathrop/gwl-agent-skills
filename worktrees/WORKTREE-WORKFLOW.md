@@ -42,8 +42,11 @@ checked into the working tree. Git branches diverge working trees. So:
 ## The discipline
 
 1. **The primary checkout rests on main.** It is the ledger's home.
-2. **Feature work happens in linked worktrees**, at
-   `~/Source/worktrees/<project>/<feature>`.
+2. **Feature work happens in linked worktrees**, outside the checkout
+   under a fixed worktree root — the default convention is
+   `~/worktrees/<project>/<feature>`; `WORKTREES_ROOT` or your own
+   layout overrides it. The load-bearing rule is *outside the primary
+   checkout*, not any particular path.
 3. **`.pebble` changes are committed only from the primary checkout**
    (which is always on main) — commit and push immediately, as today.
 4. **pb commands from inside a feature worktree are fine and

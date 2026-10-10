@@ -1,6 +1,6 @@
 ---
 name: worktrees
-description: Git worktree workflow discipline — the primary checkout rests on main, feature work happens in linked worktrees (~/Source/worktrees/<project>/<feature>), and shared working-tree state (append-only ledgers etc.) is committed only from main. Use when starting feature work, creating or switching worktrees, touching cross-branch shared files, or cleaning up after merges.
+description: Git worktree workflow discipline — the primary checkout rests on main, feature work happens in linked worktrees outside the checkout under a fixed worktree root, and shared working-tree state (append-only ledgers etc.) is committed only from main. Use when starting feature work, creating or switching worktrees, touching cross-branch shared files, or cleaning up after merges.
 ---
 
 ## When to use this skill
@@ -14,8 +14,12 @@ tool-agnostic.
 ## Core discipline
 
 1. **The primary checkout rests on main.** Don't do feature work in it.
-2. **Feature work happens in linked worktrees**, at
-   `~/Source/worktrees/<project>/<feature>`.
+2. **Feature work happens in linked worktrees**, outside the checkout,
+   under a fixed worktree root. The default convention is
+   `~/worktrees/<project>/<feature>` — set `WORKTREES_ROOT` (honored by
+   this skill's setup script) or adjust the paths to your layout. The
+   load-bearing rule is that worktrees live *outside the primary
+   checkout*, not any particular path.
 3. **Shared working-tree state commits only from the primary checkout.**
    If a file is append-only cross-branch state (an issue ledger, a
    changelog-by-convention), its changes belong on main immediately,
@@ -27,13 +31,13 @@ tool-agnostic.
 
 ```bash
 # Create (from the primary checkout, which is on main):
-git worktree add ~/Source/worktrees/<project>/<feature> -b <feature-branch>
+git worktree add <worktrees-root>/<project>/<feature> -b <feature-branch>
 
 # Work there normally: edit, test, commit the FEATURE's files there.
 # The feature branch carries the feature — nothing else.
 
 # Clean up after merge:
-git worktree remove ~/Source/worktrees/<project>/<feature>
+git worktree remove <worktrees-root>/<project>/<feature>
 ```
 
 - Each worktree needs its own dependency install (`npm install`,
