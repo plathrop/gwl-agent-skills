@@ -53,7 +53,11 @@ checked into the working tree. Git branches diverge working trees. So:
    layout overrides it. The load-bearing rule is *outside the primary
    checkout*, not any particular path.
 3. **`.pebble` changes are committed only from the primary checkout**
-   (which is always on main) — commit and push immediately, as today.
+   (which is always on main) — commit and push immediately. That push is
+   the one **sanctioned exception** to the push-to-main gate: an unpushed
+   ledger is a stale ledger on every other host, and a merge collision
+   waiting to happen. Everything else landing on main keeps the gate. If
+   you have to ask whether a commit is ledger-only, it isn't.
 4. **pb commands from inside a feature worktree are fine and
    encouraged** — they transparently read and write main's live ledger.
    This is the mechanism that makes the discipline nearly free: the
