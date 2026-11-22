@@ -110,6 +110,22 @@ access the `/user` endpoint, which requires a user token.)
 The private key and token cache are written with `0600` permissions and
 must never be committed to a repository.
 
+## Testing
+
+Run `bash gh-app/test.sh` — no framework, no network. It covers the
+wrapper's failure contract with fake `gh`/`gh-app-token` executables:
+
+- a failed token mint exits nonzero and never invokes `gh`, so the
+  caller's personal credentials cannot silently take over;
+- a mint that succeeds but emits nothing is treated the same way;
+- the happy path invokes `gh` with `GH_TOKEN` exported from the mint.
+
+Evidence for the contract: a real incident (2026-11-21) where
+`export GH_TOKEN="$(gh-app-token)"` under `set -euo pipefail` did not
+propagate the mint's failure (bash 5.3), leaving `gh` to authenticate
+from the environment's default credentials — the exact downgrade the
+wrapper exists to prevent.
+
 ## Security notes
 
 - The private key is the crown jewel: anyone with it can mint tokens for

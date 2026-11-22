@@ -12,5 +12,15 @@
 # Read-only commands (gh pr view, gh pr diff, ...) may use plain `gh`.
 set -euo pipefail
 
-export GH_TOKEN="$(gh-app-token)"
+# Mint the token with a *plain* assignment, then export. `export VAR="$(cmd)"`
+# is NOT safe here: under `set -e`, `export` does not reliably propagate the
+# command substitution's failure, so a failed mint would export an empty
+# GH_TOKEN and `gh` would silently fall back to the user's keyring auth — the
+# exact downgrade this wrapper exists to prevent. Observed on bash 5.3.
+GH_TOKEN="$(gh-app-token)"
+if [ -z "$GH_TOKEN" ]; then
+    echo "gh-app: gh-app-token succeeded but produced no token; refusing to run gh without the app identity" >&2
+    exit 1
+fi
+export GH_TOKEN
 exec gh "$@"
