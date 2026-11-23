@@ -101,7 +101,25 @@ it replaces a judgement call per case with an answer.
 
 ## Record anatomy
 
-A record is YAML front matter, then a body in six sections.
+A record is YAML front matter, then a body whose headings are exact
+strings:
+
+```
+## Context
+## Decision
+## Consequences
+## Alternatives Considered
+### Do Nothing
+## References
+## Promotion              (Draft records only)
+```
+
+Five top-level sections, `### Do Nothing` as a required subsection of the
+fourth, and `## Promotion` on drafts. They are `##` because the record is
+the document; they appear below as `###` only because this file is
+discussing them. `check` compares these lines literally, so a variant —
+`## Promotion:`, a different case, a setext underline — is a finding, and
+the fix is the canonical heading rather than a looser matcher.
 
 ### Front matter
 
@@ -156,9 +174,12 @@ records, or at least not these.
 
 **File naming**: `NNNN-slug.md`, where `NNNN` matches `id` and `slug` is a
 short lowercase hyphenated version of the title. Numbers are never reused
-and never reordered. If a repository has legacy records whose filenames do
-not match their ids, the id in front matter and the index are
-authoritative; see *Adopting this in an existing repository*.
+and never reordered. A mismatch between filename and id is an error, except
+for records listed in an adoption record's `legacy_bodies`, where it is a
+warning: adoption keeps legacy filenames because renaming them breaks
+inbound links from specs and instructions that are often immutable by
+convention. The id in front matter, and the index, are authoritative; see
+*Adopting this in an existing repository*.
 
 ### Context
 
@@ -352,20 +373,35 @@ Pass `--dir` for a different location.
 python3 scripts/drs.py new "<title>"   # scaffold the next record from assets/template.md
 python3 scripts/drs.py index           # regenerate docs/decisions/README.md
 python3 scripts/drs.py check           # audit the set; exit 1 on errors
-python3 scripts/drs.py check --strict  # treat adoption-era warnings as errors
+python3 scripts/drs.py check --strict  # require every file to be a managed record
 ```
 
-`check` verifies what can be verified mechanically: ids unique and
-well-formed; states in the vocabulary; `status.by` present when required
-and resolving; every `supersedes` edge matched by a `status.by` edge and
-vice versa; required sections present, including `### Do Nothing`;
-relative links resolving; the index current and complete; near-duplicate
-titles among live records flagged for a human.
+`check` verifies what can be verified mechanically:
 
-The section checks compare heading lines as exact strings. They are not
-pattern matching, so they cannot be fooled by formatting and cannot
-report a content defect they did not actually see; anything subtler than
-presence is out of scope.
+- front matter parses; ids are unique and well-formed; states are in the
+  vocabulary;
+- every `status.by` resolves to an existing record, and is present exactly
+  when the state requires it;
+- each id in a record's `supersedes` resolves to a record in `Superseded`
+  state whose `status.by` names that record — and every `Superseded`
+  record is listed in the `supersedes` of the record naming it. The
+  supersession edge is checked in both directions, and **only** that edge
+  is: amendments and deprecations name a justifying record in
+  `status.by`, but nothing replaces them, so their edges have no mirror;
+- every required heading is present, and `## Promotion` is present exactly
+  when the state is `Draft`;
+- relative links resolve;
+- the index is current and complete;
+- near-duplicate titles among live records are flagged for a human.
+
+The heading checks compare whole lines as exact strings. That is
+deliberate: they can report a missing section and cannot report a content
+defect they did not see. The cost is that a valid variant heading will not
+match, so the corpus must use the canonical headings given in *Record
+anatomy* — a variant is a finding, not a false positive. Anything subtler
+— is this section substantive? does this Draft name criteria reality could
+test? — is out of scope, because a check that guesses is a check that
+lies.
 
 It cannot verify the things that matter most: whether the reasoning is
 honest, whether an amendment was really compatible, whether the
@@ -426,11 +462,25 @@ When a repository does need its whole set migrated, retrofit **in place**:
 3. **Allow filename/id mismatches for legacy files.** Renaming them
    breaks inbound links from specs, code comments, and instructions that
    are often immutable by convention. The index bridges id to path.
-4. **Record the adoption in one record**, with an **enumerated** list of
-   records grandfathered under an older section format and a reason per
-   entry. Enumerated, not a blanket exemption: a blanket exemption becomes
-   where future sloppiness hides, while adding a name to a list of names
-   is a visible diff against a record.
+4. **Record the adoption in one record**, carrying `legacy_bodies`: the
+   ids of the records whose bodies predate this section format, with a
+   reason per entry in its prose. Enumerated, not a blanket exemption — a
+   blanket exemption becomes where future sloppiness hides, while adding a
+   name to a list of names is a visible diff against a record.
+
+`legacy_bodies` exempts exactly the ids it lists, from the heading checks
+and the filename/id check, and from nothing else. Every listed id must
+resolve to a managed record: an unresolvable id is an error, because the
+list is the one place the exemption is supposed to be trustworthy.
+Listing a record whose body conforms anyway is a warning worth pruning. If
+several records carry the field, their lists union.
+
+Files with no front matter cannot be listed at all. They are *unmanaged*,
+which is its own finding: a warning by default, since forward-only
+adoption leaves them alone, and an error under `--strict`, which means
+"every file in this directory is a managed record". Neither mode asks
+anyone to rewrite a legacy body, because a check that can only pass by
+falsifying history is a check people switch off.
 
 Do not copy decisions forward into new files and supersede the originals.
 The decision did not change, so the supersession would be false, and the
