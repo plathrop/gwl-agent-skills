@@ -99,7 +99,8 @@ behavior).
 
 Upstream Pebble docs ([source repo](https://github.com/markmdev/pebble/)):
 
-- [docs/cli-reference.md](https://github.com/markmdev/pebble/blob/main/docs/cli-reference.md) — complete command/flag reference
+- [docs/cli-reference.md](https://github.com/markmdev/pebble/blob/main/docs/cli-reference.md) — complete command/flag
+  reference
 - [CLI_EXAMPLES.md](https://github.com/markmdev/pebble/blob/main/CLI_EXAMPLES.md) — example commands with sample output
 
 Note: the docs occasionally drift from the shipped CLI (e.g. shorthand

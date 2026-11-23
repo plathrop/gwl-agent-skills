@@ -98,14 +98,14 @@ access the `/user` endpoint, which requires a user token.)
 
 `gh-app-token` reads, in order of precedence:
 
-| Env var | Config key | Meaning |
-|---------|-----------|---------|
-| `GH_APP_ID` | `app_id` | The app's numeric ID |
-| `GH_APP_INSTALLATION_ID` | `installation_id` | The installation to act as |
-| `GH_APP_PRIVATE_KEY` | `private_key` | Path to the PEM, or the PEM text itself |
-| `GH_APP_CONFIG_DIR` | — | Override config dir (default `~/.config/gh-app`) |
-| `GH_APP_CACHE_DIR` | — | Override token cache dir (default `~/.cache/gh-app`) |
-| `GH_APP_API_URL` | — | Override API base (default `https://api.github.com`) |
+| Env var                  | Config key        | Meaning                                              |
+| ------------------------ | ----------------- | ---------------------------------------------------- |
+| `GH_APP_ID`              | `app_id`          | The app's numeric ID                                 |
+| `GH_APP_INSTALLATION_ID` | `installation_id` | The installation to act as                           |
+| `GH_APP_PRIVATE_KEY`     | `private_key`     | Path to the PEM, or the PEM text itself              |
+| `GH_APP_CONFIG_DIR`      | —                 | Override config dir (default `~/.config/gh-app`)     |
+| `GH_APP_CACHE_DIR`       | —                 | Override token cache dir (default `~/.cache/gh-app`) |
+| `GH_APP_API_URL`         | —                 | Override API base (default `https://api.github.com`) |
 
 The private key and token cache are written with `0600` permissions and
 must never be committed to a repository.

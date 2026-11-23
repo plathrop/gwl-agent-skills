@@ -14,11 +14,11 @@ driving.
 Pi has three modes that cover nearly every headless use case. Choose by
 how much conversation and observability you need:
 
-| Mode | Shape | Observability | Use for |
-|------|-------|---------------|---------|
-| **Print** (`-p`) | One-shot: prompt in, text on stdout, exits | None — no usage, cost, or tool visibility | Trivial one-shot generation where you only need the words |
-| **JSON** (`--mode json -p`) | Same one-shot shape, every event as JSONL | Full: text, thinking, tool calls, usage/cost — all parseable | **Reviews, second opinions, anything whose process matters** |
-| **RPC** (`--mode rpc`) | Persistent process; `prompt`, `steer`, `follow_up`, `get_state`, `get_last_assistant_text` | Full, plus mid-run steering | Real conversations with a subagent; needs a long-lived driver |
+| Mode                        | Shape                                                                                      | Observability                                                | Use for                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------- |
+| **Print** (`-p`)            | One-shot: prompt in, text on stdout, exits                                                 | None — no usage, cost, or tool visibility                    | Trivial one-shot generation where you only need the words     |
+| **JSON** (`--mode json -p`) | Same one-shot shape, every event as JSONL                                                  | Full: text, thinking, tool calls, usage/cost — all parseable | **Reviews, second opinions, anything whose process matters**  |
+| **RPC** (`--mode rpc`)      | Persistent process; `prompt`, `steer`, `follow_up`, `get_state`, `get_last_assistant_text` | Full, plus mid-run steering                                  | Real conversations with a subagent; needs a long-lived driver |
 
 **Default to JSON mode.** The process record is worth more than the
 answer — see "Dead reviews" below.
