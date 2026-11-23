@@ -143,7 +143,9 @@ supersedes: []
 recording because provenance of *reasoning* is different from provenance
 of code: a record drafted by a model and ratified by a human is a
 different object from one a human wrote, and a later reader deserves to
-know which they are reading.
+know which they are reading. Requiring a reviewer is opinionated on
+purpose: a repository where nothing gets ratified does not need decision
+records, or at least not these.
 
 **File naming**: `NNNN-slug.md`, where `NNNN` matches `id` and `slug` is a
 short lowercase hyphenated version of the title. Numbers are never reused
@@ -330,16 +332,22 @@ python3 scripts/drs.py check           # audit the set; exit 1 on errors
 python3 scripts/drs.py check --strict  # treat adoption-era warnings as errors
 ```
 
-`check` verifies what can be verified: ids unique and well-formed; states
-in the vocabulary; `status.by` present when required and resolving; every
-`supersedes` edge matched by a `status.by` edge and vice versa; required
-sections present, including `### Do Nothing`; a `## Promotion` section on
-every Draft; relative links resolving; the index current and complete;
-near-duplicate titles among live records flagged for a human.
+`check` verifies what can be verified mechanically: ids unique and
+well-formed; states in the vocabulary; `status.by` present when required
+and resolving; every `supersedes` edge matched by a `status.by` edge and
+vice versa; required sections present, including `### Do Nothing`;
+relative links resolving; the index current and complete; near-duplicate
+titles among live records flagged for a human.
+
+The section checks compare heading lines as exact strings. They are not
+pattern matching, so they cannot be fooled by formatting and cannot
+report a content defect they did not actually see; anything subtler than
+presence is out of scope.
 
 It cannot verify the things that matter most: whether the reasoning is
 honest, whether an amendment was really compatible, whether the
-alternatives were considered or invented afterwards. Those stay with you,
+alternatives were considered or invented afterwards, whether a Draft
+names promotion criteria reality could ever test. Those stay with you,
 and a clean `check` is not evidence of a good record set.
 
 **The index is generated, committed, and checked.** Commit it with the
