@@ -13,12 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dprint/check@v2.5
-        env:
-          # Keep in step with mise.toml: without this the action resolves the
-          # latest release, so CI and a local `dprint check` can disagree the
-          # day a formatter release changes markdown output.
-          DPRINT_VERSION: 0.64.3
+      # dprint comes from mise.toml, so there is one pin for a local check and
+      # CI rather than two that can drift.
+      - uses: jdx/mise-action@v2
+      - run: dprint check
 
   test:
     runs-on: ubuntu-latest
