@@ -21,6 +21,26 @@ directory structure convention and the list of available skills.
   harness-specific examples are needed, present them as one option among
   potentially many.
 
+### Where text goes
+
+There is no line cap on a skill and no target length. What a sentence is
+*for* decides where it lives:
+
+- **`SKILL.md`** — the runtime protocol: what the agent must get right at
+  the moment it acts, including every rule it could otherwise get wrong.
+  Long is fine when the length is rules.
+- **`references/`** — depth needed only while doing the work in depth:
+  worked examples, long-form guidance, format notes. The agent loads one
+  by path when it needs it.
+- **`assets/`** — files tooling consumes, such as templates. Not prose.
+- **`README.md`** — design rationale, configuration, and evidence, for
+  people rather than for the agent.
+
+A `SKILL.md` that grows because it is explaining itself has outgrown its
+file: move the explanation to `references/` or `README.md` and leave the
+rule behind. The test is never how long the file is; it is whether the
+agent needs that text in order to act correctly.
+
 ## Authoring skills
 
 Skills here are published for anyone: opinionated, but usable as-is by
