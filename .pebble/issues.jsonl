@@ -117,3 +117,6 @@
 {"type":"create","issueId":"GWLA-0yc5qj","timestamp":"2026-11-23T18:24:17.029Z","data":{"title":"decisions: README, root README row, orient cross-reference","type":"task","priority":2,"parent":"GWLA-nkvmm3"},"source":"gwl-agent-skills"}
 {"type":"update","issueId":"GWLA-nkvmm3","timestamp":"2026-11-23T18:24:17.033Z","data":{},"source":"gwl-agent-skills"}
 {"type":"update","issueId":"GWLA-0yc5qj","timestamp":"2026-11-23T18:24:18.700Z","data":{"blockedBy":["GWLA-twf7wz"]},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-twf7wz","timestamp":"2026-11-23T18:34:10.589Z","data":{"status":"in_progress"},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-nkvmm3","timestamp":"2026-11-23T18:34:10.589Z","data":{"status":"in_progress"},"source":"gwl-agent-skills"}
+{"type":"comment","issueId":"GWLA-twf7wz","timestamp":"2026-11-23T18:34:12.904Z","data":{"text":"SKILL.md drafted and committed on branch decisions-skill (worktree ~/Source/worktrees/gwl-agent-skills/decisions-skill). 409 lines, 18 sections. Awaiting protocol review before tooling/README.","timestamp":"2026-11-23T18:34:12.904Z"},"source":"gwl-agent-skills"}
