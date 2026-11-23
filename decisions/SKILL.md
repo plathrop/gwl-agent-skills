@@ -135,9 +135,16 @@ supersedes: []
 | `authors` | always | Who reasoned it out. Name a model by model id when a model drafted it. |
 | `reviewers` | always | Who ratified it. An agent may author a record; a human ratifies it. |
 | `status.state` | always | `Draft`, `Accepted`, `Amended`, `Deprecated`, or `Superseded`. |
-| `status.by` | when state is `Amended`, `Deprecated`, or `Superseded` | The id of the record that caused the state change. |
+| `status.by` | when state is `Amended`, `Deprecated`, or `Superseded` | The id of the record that caused the **current** state. |
 | `status.date` | optional | When the state changed. Omitted means "same as `date`, or recoverable from git". |
 | `supersedes` | when this record supersedes anything | The ids it replaces. |
+
+`status.by` names the record that caused the current state, not one entry
+per state the record has ever been in. A record can change state more than
+once — amended, then deprecated — and the field holds the latest cause.
+Earlier transitions are not lost: they are in git, and in the References of
+the records that caused them. Do not grow a history list here; it would
+duplicate git and then drift from it.
 
 `authors` and `reviewers` are claims, like a commit author. They are worth
 recording because provenance of *reasoning* is different from provenance
@@ -224,21 +231,35 @@ unrecorded decision wearing a draft's clothes.
 
 ## Lifecycle
 
-Five states, and only the `status` block mutates once a record is
-accepted.
+Five states, and a closed list of what a record may change once it is
+accepted:
+
+- a **state transition** changes the `status` block, and nothing else;
+- an **amendment** changes the clauses its justifying record names, plus
+  the `status` block;
+- a **typographic or formatting fix** changes the body and leaves the
+  status alone;
+- **superseding an old record** changes that record's `status` block, and
+  nothing else.
+
+There is no fifth case. In particular, an accepted record's Decision is
+never revised to describe what the project later did.
 
 | State | Meaning | Leaves via |
 | --- | --- | --- |
 | `Draft` | Decided in principle; reality has not tested it yet. | Promotion to `Accepted`, or supersession. |
 | `Accepted` | Decided and binding. | Amendment, deprecation, or supersession. |
-| `Amended` | Accepted and binding, with a compatible change made in place. | Further amendment, or supersession. |
+| `Amended` | Accepted and binding, with a compatible change made in place. | Further amendment, deprecation, or supersession. |
 | `Deprecated` | No longer applicable, with no replacement. | Nothing; it is historical. |
 | `Superseded` | Over-ridden by a later record. | Nothing; read the record `status.by` names. |
 
-Transitions mutate the `status` block only. Promotion is
-`Draft` → `Accepted` with the `## Promotion` section left as written —
-it is the evidence, and deleting it deletes the record of what the draft
-was betting on.
+`Amended` is still accepted and binding, so it can be deprecated like any
+other live record: correcting one clause does not make the rest of a record
+harder to retire.
+
+Promotion is a state transition: `Draft` → `Accepted`, with the
+`## Promotion` section left as written — it is the evidence, and deleting
+it deletes the record of what the draft was betting on.
 
 ### The amend-or-supersede test
 
