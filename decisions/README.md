@@ -16,13 +16,13 @@ somebody ratifies, in repositories that have reviews.
 
 ## What is here
 
-| Path | What it is |
-| --- | --- |
-| [`SKILL.md`](SKILL.md) | The runtime protocol: artifact taxonomy, when a record is earned, anatomy, lifecycle, amend/supersede procedures, reading order, agent obligations, adoption. |
-| [`references/writing.md`](references/writing.md) | Depth for drafting: worked good/bad examples per section, how to write a summary line and a rubric record, how to write an amendment justification. |
-| [`assets/template.md`](assets/template.md) | What `drs.py new` copies. |
-| [`scripts/drs.py`](scripts/drs.py) | `new`, `index`, `check`. Python 3.11+, standard library only. |
-| [`tests/test_drs.py`](tests/test_drs.py) | 62 tests, stdlib `unittest`. |
+| Path                                             | What it is                                                                                                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`SKILL.md`](SKILL.md)                           | The runtime protocol: artifact taxonomy, when a record is earned, anatomy, lifecycle, amend/supersede procedures, reading order, agent obligations, adoption. |
+| [`references/writing.md`](references/writing.md) | Depth for drafting: worked good/bad examples per section, how to write a summary line and a rubric record, how to write an amendment justification.           |
+| [`assets/template.md`](assets/template.md)       | What `drs.py new` copies.                                                                                                                                     |
+| [`scripts/drs.py`](scripts/drs.py)               | `new`, `index`, `check`. Python 3.11+, standard library only.                                                                                                 |
+| [`tests/test_drs.py`](tests/test_drs.py)         | 62 tests, stdlib `unittest`.                                                                                                                                  |
 
 ## Setup
 
@@ -37,6 +37,11 @@ python3 <skill-dir>/scripts/drs.py check
 `--dir` may go before or after the subcommand. Default is
 `<repo root>/docs/decisions`, found by walking up from the current directory
 to the nearest `.git`.
+
+`assets/template.md` is excluded from `dprint` in the repo's `dprint.json`: its
+`{{placeholder}}` substitutions are rewritten by the markdown formatter
+(`[{{authors}}]` becomes `[{ { authors } }]`, and the scaffold silently stops
+substituting). It is tooling input, not prose.
 
 `new` reads the author from `git config user.name` unless you pass `--author`;
 reviewers are passed with repeated `--reviewer` flags, because a scaffold

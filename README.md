@@ -18,7 +18,7 @@ written, or adapt it to your own conventions.
 | [pebble](pebble/)       | Work protocol for the Pebble (`pb`) local issue tracker — claim, track, and close issues while coding                                           |
 | [worktrees](worktrees/) | Git worktree discipline — primary checkout on main, feature work in linked worktrees, shared-tree state (ledgers etc.) committed only from main |
 | [gh-app](gh-app/)       | Post GitHub reviews, comments, and statuses as your GitHub App instead of the user's personal account                                           |
-| [decisions](decisions/) | Decision records (ADRs): what earns one, how it changes after acceptance, and the generated index and audit that keep a corpus honest |
+| [decisions](decisions/) | Decision records (ADRs): what earns one, how it changes after acceptance, and the generated index and audit that keep a corpus honest           |
 | [drive-pi](drive-pi/)   | Drive the pi coding agent CLI headlessly — print/JSON/RPC modes, commissioning not-me code reviews and scoped subagents                         |
 
 The skills are independent but compose well: orient discovers which of

@@ -39,11 +39,11 @@ Two properties follow, and everything below elaborates them:
 
 Decision records are one of three artifacts that are easy to confuse:
 
-| Artifact | Answers | Lives |
-| --- | --- | --- |
-| **Decision record** | Why is it this way, and what did we reject? | `docs/decisions/` |
+| Artifact                 | Answers                                               | Lives                                            |
+| ------------------------ | ----------------------------------------------------- | ------------------------------------------------ |
+| **Decision record**      | Why is it this way, and what did we reject?           | `docs/decisions/`                                |
 | **Spec / change design** | What does the system do, or what will this change do? | wherever the repo keeps specs (e.g. `openspec/`) |
-| **Dated narrative** | What happened, and what did we say at the time? | wherever the repo keeps docs |
+| **Dated narrative**      | What happened, and what did we say at the time?       | wherever the repo keeps docs                     |
 
 **The boundary test**: a change's design document explains *this change*;
 a decision record covers something that **still binds after the change is
@@ -148,19 +148,19 @@ supersedes: []
 ---
 ```
 
-| Field | Required | Meaning |
-| --- | --- | --- |
-| `id` | always | `DR-` plus a zero-padded integer. The citable handle. |
-| `title` | always | The decision's name, not the question it answers. |
-| `summary` | always | The decision in one sentence, 140 characters or fewer. This is what the index shows. |
-| `date` | always | The date the decision was made — not the date the file was written, copied, or reformatted. |
-| `authors` | always | Who reasoned it out. Name a model by model id when a model drafted it. |
-| `reviewers` | always | Who ratified it. An agent may author a record; a human ratifies it. Empty only while the record is a `Draft` — a record nobody ratified is a draft. |
-| `status.state` | always | `Draft`, `Accepted`, `Amended`, `Deprecated`, or `Superseded`. |
-| `status.by` | when state is `Amended`, `Deprecated`, or `Superseded` | The id of the record that caused the **current** state. |
-| `status.date` | optional | When the state changed. Omitted means "same as `date`, or recoverable from git". |
-| `supersedes` | when this record supersedes anything | The ids it replaces. |
-| `legacy_bodies` | on an adoption record | Ids whose bodies predate this section format. Demotes their heading and filename checks to warnings; changes nothing else. |
+| Field           | Required                                               | Meaning                                                                                                                                             |
+| --------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | always                                                 | `DR-` plus a zero-padded integer. The citable handle.                                                                                               |
+| `title`         | always                                                 | The decision's name, not the question it answers.                                                                                                   |
+| `summary`       | always                                                 | The decision in one sentence, 140 characters or fewer. This is what the index shows.                                                                |
+| `date`          | always                                                 | The date the decision was made — not the date the file was written, copied, or reformatted.                                                         |
+| `authors`       | always                                                 | Who reasoned it out. Name a model by model id when a model drafted it.                                                                              |
+| `reviewers`     | always                                                 | Who ratified it. An agent may author a record; a human ratifies it. Empty only while the record is a `Draft` — a record nobody ratified is a draft. |
+| `status.state`  | always                                                 | `Draft`, `Accepted`, `Amended`, `Deprecated`, or `Superseded`.                                                                                      |
+| `status.by`     | when state is `Amended`, `Deprecated`, or `Superseded` | The id of the record that caused the **current** state.                                                                                             |
+| `status.date`   | optional                                               | When the state changed. Omitted means "same as `date`, or recoverable from git".                                                                    |
+| `supersedes`    | when this record supersedes anything                   | The ids it replaces.                                                                                                                                |
+| `legacy_bodies` | on an adoption record                                  | Ids whose bodies predate this section format. Demotes their heading and filename checks to warnings; changes nothing else.                          |
 
 `status.by` names the record that caused the current state, not one entry
 per state the record has ever been in. A record can change state more than
@@ -274,13 +274,13 @@ accepted:
 There is no fifth case. In particular, an accepted record's Decision is
 never revised to describe what the project later did.
 
-| State | Meaning | Leaves via |
-| --- | --- | --- |
-| `Draft` | Decided in principle; reality has not tested it yet. | Promotion to `Accepted`, or supersession. |
-| `Accepted` | Decided and binding. | Amendment, deprecation, or supersession. |
-| `Amended` | Accepted and binding, with a compatible change made in place. | Further amendment, deprecation, or supersession. |
-| `Deprecated` | No longer applicable, with no replacement. | Nothing; it is historical. |
-| `Superseded` | Over-ridden by a later record. | Nothing; read the record `status.by` names. |
+| State        | Meaning                                                       | Leaves via                                       |
+| ------------ | ------------------------------------------------------------- | ------------------------------------------------ |
+| `Draft`      | Decided in principle; reality has not tested it yet.          | Promotion to `Accepted`, or supersession.        |
+| `Accepted`   | Decided and binding.                                          | Amendment, deprecation, or supersession.         |
+| `Amended`    | Accepted and binding, with a compatible change made in place. | Further amendment, deprecation, or supersession. |
+| `Deprecated` | No longer applicable, with no replacement.                    | Nothing; it is historical.                       |
+| `Superseded` | Over-ridden by a later record.                                | Nothing; read the record `status.by` names.      |
 
 `Amended` is still accepted and binding, so it can be deprecated like any
 other live record: correcting one clause does not make the rest of a record

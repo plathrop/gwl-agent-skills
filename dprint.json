@@ -12,7 +12,8 @@
   "excludes": [
     "**/*-lock.json",
     ".pebble/**",
-    ".pi/**"
+    ".pi/**",
+    "decisions/assets/**"
   ],
   "plugins": [
     "npm:@dprint/json@0.24.0",

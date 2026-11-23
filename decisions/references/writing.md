@@ -16,13 +16,13 @@ to a new case without asking you.
 
 ## The sections, and the failure mode of each
 
-| Section | Failure mode |
-| --- | --- |
-| Context | Reads like an argument for the decision. |
-| Decision | Reads like a plan; a reader cannot tell what they are now obliged to honor. |
-| Consequences | Lists benefits only, or lists files. |
-| Alternatives | Strawmen, or a `Do Nothing` that says "nothing". |
-| References | A link dump with no statement of why the link matters. |
+| Section      | Failure mode                                                                |
+| ------------ | --------------------------------------------------------------------------- |
+| Context      | Reads like an argument for the decision.                                    |
+| Decision     | Reads like a plan; a reader cannot tell what they are now obliged to honor. |
+| Consequences | Lists benefits only, or lists files.                                        |
+| Alternatives | Strawmen, or a `Do Nothing` that says "nothing".                            |
+| References   | A link dump with no statement of why the link matters.                      |
 
 ### Context that does not give away the answer
 
