@@ -155,7 +155,7 @@ supersedes: []
 | `summary` | always | The decision in one sentence, 140 characters or fewer. This is what the index shows. |
 | `date` | always | The date the decision was made — not the date the file was written, copied, or reformatted. |
 | `authors` | always | Who reasoned it out. Name a model by model id when a model drafted it. |
-| `reviewers` | always | Who ratified it. An agent may author a record; a human ratifies it. |
+| `reviewers` | always | Who ratified it. An agent may author a record; a human ratifies it. Empty only while the record is a `Draft` — a record nobody ratified is a draft. |
 | `status.state` | always | `Draft`, `Accepted`, `Amended`, `Deprecated`, or `Superseded`. |
 | `status.by` | when state is `Amended`, `Deprecated`, or `Superseded` | The id of the record that caused the **current** state. |
 | `status.date` | optional | When the state changed. Omitted means "same as `date`, or recoverable from git". |
