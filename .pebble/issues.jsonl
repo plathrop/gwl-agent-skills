@@ -97,3 +97,13 @@
 {"type":"update","issueId":"GWLA-xhw55a","timestamp":"2026-10-10T19:47:40.666Z","data":{"status":"in_progress"},"source":"gwl-agent-skills"}
 {"type":"update","issueId":"GWLA-z8fkfs","timestamp":"2026-10-10T19:47:40.666Z","data":{"status":"in_progress"},"source":"gwl-agent-skills"}
 {"type":"close","issueId":"GWLA-xhw55a","timestamp":"2026-10-10T19:48:02.885Z","data":{"reason":"README section added; PR #8 open for review (worktree global-merge-driver-docs)."},"source":"gwl-agent-skills"}
+{"type":"create","issueId":"GWLA-tez9c7","timestamp":"2026-11-23T17:52:40.188Z","data":{"title":"Add CI to run skill test scripts; instruct agents to run them after skill changes","type":"task","priority":4,"description":"Only gh-app/test.sh exists today and nothing runs it. Add a CI workflow (no build step in this repo, so this is mostly 'run *.sh tests') and a line in AGENTS.md telling agents to run the affected skill's tests after changing it.","parent":"GWLA-ix6tfh"},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-ix6tfh","timestamp":"2026-11-23T17:52:40.191Z","data":{},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-z8fkfs","timestamp":"2026-11-23T17:52:42.611Z","data":{"status":"open","title":"Worktrees Skill [bucket]"},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-5p9dss","timestamp":"2026-11-23T17:52:43.258Z","data":{"title":"Pebble Skill [bucket]"},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-kzwi5e","timestamp":"2026-11-23T17:52:43.906Z","data":{"title":"Drive PI Skill [bucket]"},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-z2dvjh","timestamp":"2026-11-23T17:52:44.556Z","data":{"title":"GH App Skill [bucket]"},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-uwwlb9","timestamp":"2026-11-23T17:52:45.195Z","data":{"title":"Orient Skill [bucket]"},"source":"gwl-agent-skills"}
+{"type":"close","issueId":"GWLA-4dc35g","timestamp":"2026-11-23T17:53:19.042Z","data":{"reason":"Premise gone: the parallel-review skill that produced the collapse was removed in GWLA-rzktso. One nugget worth keeping, folded into the next gh-app docs change rather than tracked here — GitHub computes reviewDecision from the latest review per reviewer identity, so two agents sharing the app identity mean a later APPROVE silently overrides an earlier CHANGES_REQUESTED."},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-fi1m8w","timestamp":"2026-11-23T17:53:19.739Z","data":{"priority":3},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-fi1m8w","timestamp":"2026-11-23T17:53:22.236Z","data":{"priority":2},"source":"gwl-agent-skills"}
