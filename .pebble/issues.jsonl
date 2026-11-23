@@ -107,3 +107,13 @@
 {"type":"close","issueId":"GWLA-4dc35g","timestamp":"2026-11-23T17:53:19.042Z","data":{"reason":"Premise gone: the parallel-review skill that produced the collapse was removed in GWLA-rzktso. One nugget worth keeping, folded into the next gh-app docs change rather than tracked here — GitHub computes reviewDecision from the latest review per reviewer identity, so two agents sharing the app identity mean a later APPROVE silently overrides an earlier CHANGES_REQUESTED."},"source":"gwl-agent-skills"}
 {"type":"update","issueId":"GWLA-fi1m8w","timestamp":"2026-11-23T17:53:19.739Z","data":{"priority":3},"source":"gwl-agent-skills"}
 {"type":"update","issueId":"GWLA-fi1m8w","timestamp":"2026-11-23T17:53:22.236Z","data":{"priority":2},"source":"gwl-agent-skills"}
+{"type":"comment","issueId":"GWLA-fi1m8w","timestamp":"2026-11-23T18:24:11.232Z","data":{"text":"Priority P2 -> P3 ratified 2026-11-23 (the parallel-review use case closed with GWLA-4dc35g; this shim is deferrable infrastructure).","timestamp":"2026-11-23T18:24:11.232Z"},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-fi1m8w","timestamp":"2026-11-23T18:24:11.887Z","data":{"priority":3},"source":"gwl-agent-skills"}
+{"type":"create","issueId":"GWLA-nkvmm3","timestamp":"2026-11-23T18:24:12.529Z","data":{"title":"Decision Records Skill [bucket]","type":"epic","priority":2,"description":"Evergreen bucket epic for the decisions skill: long-lived home for iterations on how decision records are written, amended, superseded, audited, and read."},"source":"gwl-agent-skills"}
+{"type":"create","issueId":"GWLA-twf7wz","timestamp":"2026-11-23T18:24:15.690Z","data":{"title":"decisions: write SKILL.md protocol","type":"task","priority":2,"parent":"GWLA-nkvmm3"},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-nkvmm3","timestamp":"2026-11-23T18:24:15.693Z","data":{},"source":"gwl-agent-skills"}
+{"type":"create","issueId":"GWLA-85et8g","timestamp":"2026-11-23T18:24:16.358Z","data":{"title":"decisions: bundle drs tooling (new / index / audit) in Python","type":"task","priority":2,"parent":"GWLA-nkvmm3"},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-nkvmm3","timestamp":"2026-11-23T18:24:16.362Z","data":{},"source":"gwl-agent-skills"}
+{"type":"create","issueId":"GWLA-0yc5qj","timestamp":"2026-11-23T18:24:17.029Z","data":{"title":"decisions: README, root README row, orient cross-reference","type":"task","priority":2,"parent":"GWLA-nkvmm3"},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-nkvmm3","timestamp":"2026-11-23T18:24:17.033Z","data":{},"source":"gwl-agent-skills"}
+{"type":"update","issueId":"GWLA-0yc5qj","timestamp":"2026-11-23T18:24:18.700Z","data":{"blockedBy":["GWLA-twf7wz"]},"source":"gwl-agent-skills"}
