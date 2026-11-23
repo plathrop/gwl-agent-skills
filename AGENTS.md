@@ -24,6 +24,9 @@ defines both. Not every skill needs either.
 - Avoid hardcoding harness-specific details in `SKILL.md`. Where
   harness-specific examples are needed, present them as one option among
   potentially many.
+- **Run the affected skill's tests after changing it.** CI runs every
+  `*/test.sh` and every Python suite under `*/tests/` on each push and pull
+  request. A skill that ships tests does not land red.
 
 ### Where text goes
 
