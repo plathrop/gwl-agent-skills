@@ -111,13 +111,17 @@ strings:
 ## Alternatives Considered
 ### Do Nothing
 ## References
-## Promotion              (Draft records only)
+## Promotion
 ```
 
 Five top-level sections, `### Do Nothing` as a required subsection of the
 fourth, and `## Promotion` on drafts. They are `##` because the record is
 the document; they appear below as `###` only because this file is
-discussing them. `check` compares these lines literally, so a variant —
+discussing them.
+
+`## Promotion` is required on a `Draft` and permitted on any later state: a
+promoted draft keeps the section, because the criteria it names are the
+evidence of what the draft was betting on. `check` compares these lines literally, so a variant —
 `## Promotion:`, a different case, a setext underline — is a finding, and
 the fix is the canonical heading rather than a looser matcher.
 
@@ -156,6 +160,7 @@ supersedes: []
 | `status.by` | when state is `Amended`, `Deprecated`, or `Superseded` | The id of the record that caused the **current** state. |
 | `status.date` | optional | When the state changed. Omitted means "same as `date`, or recoverable from git". |
 | `supersedes` | when this record supersedes anything | The ids it replaces. |
+| `legacy_bodies` | on an adoption record | Ids whose bodies predate this section format. Demotes their heading and filename checks to warnings; changes nothing else. |
 
 `status.by` names the record that caused the current state, not one entry
 per state the record has ever been in. A record can change state more than
@@ -235,11 +240,14 @@ tracker issues that carry the investigation, other records this one
 builds on or replaces, external documentation. Keep it tight; a link and
 five words beats a paragraph.
 
-Bidirectional links are not optional between records. If this record
-builds on another, or reverses one, say so here — and see *Superseding*
-for the matching edge on the other record.
+**An amendment or a supersession always has a reverse edge** —
+`status.by` on the record it changes — and that edge is required. A
+build-on citation is forward-only: a record does not accumulate a list of
+everything that later cited it. Never open an accepted record to add a
+backlink; it records a relation about a different record's decision, not a
+change to this one.
 
-### Promotion (Draft records only)
+### Promotion
 
 A Draft record names, in this section, the **observable** criteria that
 would promote it to Accepted: what has to be exercised, measured, or
@@ -303,9 +311,12 @@ corrections that do not change what a reader would do.
 1. Edit the affected part of the body, and only that part.
 2. Set `status.state` to `Amended`; set `status.by` to the id of the
    record that justifies the amendment; set `status.date`.
-3. Write or extend the justifying record so it states **which clause
-   changed and what replaced it**. An amendment whose justification
-   cannot be read is an unexplained body edit.
+3. Write the justifying record — a short one, written for this amendment,
+   stating **which clause changed and what replaced it**. It has to be
+   written now because no earlier record can have described a change that
+   had not happened yet; if several clauses move at once, one record can
+   justify all of them. An amendment whose justification cannot be read is
+   an unexplained body edit.
 4. Point the two records at each other: the amended record's
    `status.by`, the justifying record's References.
 5. Run `scripts/drs.py index` and commit both records and the index
@@ -367,7 +378,9 @@ neither is a reason to proceed quietly.
 
 The skill bundles one script, `scripts/drs.py` (Python 3.11+, standard
 library only), which operates on `<repo>/docs/decisions/` by default.
-Pass `--dir` for a different location.
+Pass `--dir` for a different location. It reads every `.md` file under
+that directory, recursively, and always skips the generated index —
+`README.md` in that directory is a view of the records, never one of them.
 
 ```bash
 python3 scripts/drs.py new "<title>"   # scaffold the next record from assets/template.md
@@ -388,8 +401,8 @@ python3 scripts/drs.py check --strict  # require every file to be a managed reco
   supersession edge is checked in both directions, and **only** that edge
   is: amendments and deprecations name a justifying record in
   `status.by`, but nothing replaces them, so their edges have no mirror;
-- every required heading is present, and `## Promotion` is present exactly
-  when the state is `Draft`;
+- every required heading is present, `## Promotion` is present on every
+  `Draft`, and its presence is accepted in any other state;
 - relative links resolve;
 - the index is current and complete;
 - near-duplicate titles among live records are flagged for a human.
@@ -468,17 +481,19 @@ When a repository does need its whole set migrated, retrofit **in place**:
    blanket exemption becomes where future sloppiness hides, while adding a
    name to a list of names is a visible diff against a record.
 
-`legacy_bodies` exempts exactly the ids it lists, from the heading checks
-and the filename/id check, and from nothing else. Every listed id must
-resolve to a managed record: an unresolvable id is an error, because the
-list is the one place the exemption is supposed to be trustworthy.
+`legacy_bodies` demotes the heading checks and the filename/id check to
+warnings for exactly the ids it lists, and changes nothing else. Every
+listed id must resolve to a managed record: an unresolvable id is an error,
+because the list is the one place the exemption is supposed to be
+trustworthy.
 Listing a record whose body conforms anyway is a warning worth pruning. If
 several records carry the field, their lists union.
 
 Files with no front matter cannot be listed at all. They are *unmanaged*,
 which is its own finding: a warning by default, since forward-only
 adoption leaves them alone, and an error under `--strict`, which means
-"every file in this directory is a managed record". Neither mode asks
+"every file under this directory is a record" — with one exclusion, the
+generated index, which is never a record and is always skipped. Neither mode asks
 anyone to rewrite a legacy body, because a check that can only pass by
 falsifying history is a check people switch off.
 
