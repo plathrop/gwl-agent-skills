@@ -87,6 +87,9 @@ openspec status --change <name> --json
 ### 5. Decision records
 
 - Locate the decision-record directory (commonly `docs/decisions`).
+- If a `decisions` skill is installed, load it: its reading protocol —
+  index first, check `status.state` in the front matter, follow
+  `status.by` — is authoritative and this step is just the pointer.
 - Read the records that govern current conventions fully, and note the
   supersession chains — which record is authoritative for each concern
   is exactly the fact later sessions will need.

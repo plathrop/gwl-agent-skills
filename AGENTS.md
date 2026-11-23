@@ -11,6 +11,10 @@ developed in.
 Each skill is a self-contained directory. See the root `README.md` for the
 directory structure convention and the list of available skills.
 
+A skill may also carry `references/` (depth loaded on demand) and `assets/`
+(files tooling consumes, such as templates); the Agent Skills specification
+defines both. Not every skill needs either.
+
 ## Working in this repo
 
 - Skills are plain Markdown and scripts — there is no build step.
