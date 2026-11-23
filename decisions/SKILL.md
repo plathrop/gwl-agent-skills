@@ -331,9 +331,11 @@ decision itself moved.
    `status.state` in the front matter — never infer state from the
    directory position, the filename, or the order of sections. A
    `Superseded` record can sort first.
-3. **Follow `status.by`** for anything not `Accepted` or `Amended`. The
-   amendment or supersession is part of the decision, not a footnote to
-   it.
+3. **Follow `status.by` whenever it is present.** The amendment or
+   supersession is part of the decision, not a footnote to it — an
+   amended record cannot be read honestly without the hop, and a
+   superseded one should not be read at all until you know what replaced
+   it. A `Draft` has no `status.by`; there is nothing to follow.
 4. **Read `Do Nothing`.** It usually holds the real argument.
 
 If a record contradicts what you are about to build, you have found
