@@ -401,7 +401,10 @@ class Graph(CorpusCase):
             1,
             front_matter(state="Superseded", by="DR-0001", supersedes='["DR-0001"]') + BODY,
         )
-        self.assertIn("supersedes lists this record; it cannot replace itself", self.errors())
+        errors = self.errors()
+        self.assertIn("supersedes lists this record; it cannot replace itself", errors)
+        # One finding, not two: the self-edge is not also reported as a cycle.
+        self.assertFalse(any("cycle" in error for error in errors), errors)
 
     def test_two_record_supersession_cycle(self):
         self.record(

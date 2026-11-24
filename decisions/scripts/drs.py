@@ -781,8 +781,12 @@ def _cycle_findings(corpus: Corpus, ids: dict[str, str]) -> list[Finding]:
     they are walked separately. Merging them into one graph would report every
     correct supersession as a cycle.
     """
+    # Self-edges are excluded because they already have their own, more
+    # specific finding; reporting a one-node "cycle" on top of it is noise.
     supersession = {
-        record.id: [target for target in record.supersedes if target in ids]
+        record.id: [
+            target for target in record.supersedes if target in ids and target != record.id
+        ]
         for record in corpus.records
         if record.id
     }
