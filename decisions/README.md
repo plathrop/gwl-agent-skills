@@ -22,7 +22,7 @@ somebody ratifies, in repositories that have reviews.
 | [`references/writing.md`](references/writing.md) | Depth for drafting: worked good/bad examples per section, how to write a summary line and a rubric record, how to write an amendment justification.           |
 | [`assets/template.md`](assets/template.md)       | What `drs.py new` copies.                                                                                                                                     |
 | [`scripts/drs.py`](scripts/drs.py)               | `new`, `index`, `check`. Python 3.11+, standard library only.                                                                                                 |
-| [`tests/test_drs.py`](tests/test_drs.py)         | 78 tests, stdlib `unittest`.                                                                                                                                  |
+| [`tests/test_drs.py`](tests/test_drs.py)         | 106 tests, stdlib `unittest`.                                                                                                                                 |
 
 ## Setup
 
@@ -54,7 +54,8 @@ python3 -m unittest discover -s decisions/tests
 ## The shape it enforces
 
 Front matter in a deliberately small YAML subset — flat scalars, one nested
-`status` mapping, flow sequences of scalars — with states `Draft`, `Accepted`,
+`status` mapping, sequences of scalars in any shape a formatter emits (flow,
+wrapped flow with a trailing comma, or block) — with states `Draft`, `Accepted`,
 `Amended`, `Deprecated`, `Superseded`, and a body of five sections plus
 `### Do Nothing` and (on drafts) `## Promotion`.
 
