@@ -597,6 +597,14 @@ class Index(CorpusCase):
         self.assertNotIn("stale", text)
         self.assertEqual(self.errors(), [])
 
+    def test_the_index_owns_itself_against_formatters(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        self.assertTrue(text.startswith(drs.INDEX_IGNORE), text[:80])
+        # Regenerating must not stack markers up.
+        self.assertEqual(self.index().count(drs.INDEX_IGNORE), 1)
+        self.assertEqual(self.errors(), [])
+
     def test_stale_index_is_an_error(self):
         self.record(1, front_matter() + BODY)
         self.index()

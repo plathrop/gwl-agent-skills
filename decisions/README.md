@@ -101,6 +101,15 @@ amendment sections, which makes the current decision a fold over sections with
 no merge discipline. Git already holds that history; the `status.by` pointer
 names the record that justifies the current state.
 
+**The index is the generator's file, and says so.** The first real corpus
+found this immediately: `drs.py index` writes unpadded tables, the repository's
+formatter pads them, and the two then fail each other's checks in a loop —
+regenerate and the formatter complains, format and the audit reports a stale
+index. Whichever runs last is "wrong". The index now opens with
+`<!-- dprint-ignore-file -->`, which makes the generator the owner in every
+adopting repo without a line of configuration, and leaves the records
+themselves formatted as ordinary markdown.
+
 **Standard library only, and no YAML parser.** A skill is adopted by copying a
 directory into an agent's skill tree, so a dependency the host must install
 makes the tool unusable in exactly the environments the skill exists to serve —

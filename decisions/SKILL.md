@@ -438,6 +438,14 @@ diff, where a reviewer can see the decision in the same place they review
 the reasoning. A stale index is an error, because a stale index is how a
 repository ends up re-deciding something it settled last year.
 
+The generated file opens with a formatter-ignore marker
+(`<!-- dprint-ignore-file -->`), and it needs one: a generated file and a
+formatter both rewrite the same tables, so without it the two trade failures
+forever — the generator's output is "unformatted", the formatter's output is
+"stale", and whichever ran last is wrong. The records themselves stay yours to
+format; only the index belongs to the generator. A repository using a
+different formatter should point its ignore file at the index.
+
 ## Agent obligations
 
 The parts of this discipline that only bind an agent:
