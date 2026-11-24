@@ -1,2 +1,6 @@
 [tools]
+# Pinned to the minor, not the patch: a security release should not need a
+# commit here. dprint is pinned exactly because formatting must be
+# reproducible; the interpreter only has to be new enough.
+python = "3.15"
 dprint = "0.64.3"
