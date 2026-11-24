@@ -1,13 +1,27 @@
 #!/usr/bin/env python3
 """drs — scaffold, index, and audit decision records.
 
-Standard library only. Operates on <repo>/docs/decisions/ by default;
-pass --dir to point somewhere else. See the skill's SKILL.md for the
-protocol this tool enforces, and README.md for how to install it.
+Standard library only, and that is a constraint rather than an accident: a
+skill is adopted by copying a directory into an agent's skill tree, so a
+dependency the host has to install makes the tool unusable in exactly the
+environments the skill exists to serve. See README.md for the longer version.
+
+Operates on <repo>/docs/decisions/ by default; pass --dir to point somewhere
+else. SKILL.md is the protocol this tool enforces.
 
     drs.py new "<title>" [--author NAME] [--reviewer NAME]...
     drs.py index
     drs.py check [--strict]
+
+The vocabulary below is the protocol's, not this file's. Four terms are used
+throughout without being defined here, and each is explained in SKILL.md:
+
+    record           a managed .md file with front matter; the unit of work
+    live             Draft, Accepted or Amended — a decision still binding
+    historical       Deprecated or Superseded — kept, but no longer current
+    legacy exemption a record whose body predates the section format, listed
+                     in an adoption record's legacy_bodies (a warning is
+                     expected; the body must not be rewritten to silence it)
 """
 
 from __future__ import annotations
@@ -34,8 +48,15 @@ REQUIRED_HEADINGS = (
     "## Alternatives Considered",
     "## References",
 )
+# A subsection of "## Alternatives Considered", not a section of its own: the
+# canonical-heading check encodes that nesting, so this must stay ###.
 DO_NOTHING_HEADING = "### Do Nothing"
 PROMOTION_HEADING = "## Promotion"
+
+# --strict promotes these warning kinds to errors. It deliberately does not
+# touch `legacy` (bodies the protocol forbids rewriting, so the warning is
+# permanent by design) or `judgement` (a heuristic a human has to settle).
+STRICT_PROMOTES = ("lint", "unmanaged")
 
 REQUIRED_FIELDS = ("id", "title", "summary", "date", "authors", "reviewers", "status")
 SUMMARY_MAX = 140
@@ -56,6 +77,8 @@ matter by `drs.py index` and checked by `drs.py check`.
 
 class DrsError(Exception):
     """A failure that should stop the command, with a message for the user."""
+
+    pass
 
 
 class FrontMatterError(DrsError):
@@ -85,21 +108,48 @@ def _unescape(raw: str, where: str) -> str:
 
 
 def _split_flow(body: str, where: str) -> list[str]:
-    """Split the inside of a flow sequence on commas outside quotes."""
-    items, buf, quote = [], [], None
+    """Split the inside of a flow sequence on commas that are not quoted.
+
+    A flow sequence is the one-line `["a", "b"]` list form the dialect allows
+    for `authors`, `reviewers`, `supersedes` and `legacy_bodies`. The whole
+    difficulty is that a comma or quote inside a value is not a separator, so
+    this walks the body one character at a time tracking three states:
+
+        in_quote      inside "..." or '...'; separators are ignored
+        escaped       the previous character was a backslash, so the current
+                      one is literal even if it is the closing quote
+
+    Getting the `escaped` state wrong is how a value like "A \"quoted, person\""
+    gets split at its internal comma, which produces front matter the rest of
+    this file then refuses to parse.
+    """
+    items, buf = [], []
+    quote = None
+    escaped = False
     for ch in body:
+        if escaped:
+            # The character after a backslash is data, never a delimiter.
+            buf.append(ch)
+            escaped = False
+            continue
+        if ch == "\\" and quote == '"':
+            buf.append(ch)
+            escaped = True
+            continue
         if quote:
             buf.append(ch)
             if ch == quote:
                 quote = None
-        elif ch in ('"', "'"):
+            continue
+        if ch in ('"', "'"):
             quote = ch
             buf.append(ch)
-        elif ch == ",":
+            continue
+        if ch == ",":
             items.append("".join(buf))
             buf = []
-        else:
-            buf.append(ch)
+            continue
+        buf.append(ch)
     if quote:
         raise FrontMatterError(f"{where}: unterminated quoted string")
     if "".join(buf).strip():
@@ -108,6 +158,14 @@ def _split_flow(body: str, where: str) -> list[str]:
 
 
 def parse_scalar(raw: str, where: str):
+    """Turn one right-hand side into a str or a list of str.
+
+    Accepts exactly what the dialect allows: a quoted string, a bare scalar, or
+    a one-line flow sequence of those. Everything YAML offers beyond that —
+    anchors, tags, block scalars, inline mappings — is rejected with the line,
+    because a format a tool can check is worth more than one that accepts
+    everything.
+    """
     raw = raw.strip()
     if not raw:
         raise FrontMatterError(f"{where}: missing value")
@@ -136,7 +194,13 @@ def parse_scalar(raw: str, where: str):
 
 
 def parse_front_matter(lines: list[str], path: Path) -> dict:
-    """Parse the restricted dialect: scalars, one nested mapping, flow lists."""
+    """Parse the restricted dialect: scalars, one nested mapping, flow lists.
+
+    >>> parse_front_matter(['id: "DR-0001"', "status:", '  state: "Draft"'], Path("x.md"))
+    {'id': 'DR-0001', 'status': {'state': 'Draft'}}
+
+    `lines` excludes the fences; `path` is used only to build error locations.
+    """
     data: dict = {}
     nested_key = None
     for offset, line in enumerate(lines):
@@ -199,64 +263,111 @@ class Record:
     front: dict
     body: str
 
+    # Every accessor below returns the field's type or an empty one. A record
+    # with `id: ["DR-0001"]` is malformed, and the validator says so; nothing
+    # downstream may crash on it or quietly stringify it. Raw access is
+    # deliberate: `front` stays as parsed, so the validator can report the
+    # actual value it found.
+
+    def scalar(self, key: str) -> str:
+        """A string field, or "" when absent or not a string."""
+        value = self.front.get(key)
+        return value if isinstance(value, str) else ""
+
+    def sequence(self, key: str) -> list[str]:
+        """A flow sequence of strings, or [] when absent or malformed."""
+        value = self.front.get(key)
+        if isinstance(value, list) and all(isinstance(item, str) for item in value):
+            return list(value)
+        return []
+
     @property
     def id(self) -> str:
-        return self.front.get("id", "")
+        return self.scalar("id")
 
     @property
     def title(self) -> str:
-        return self.front.get("title", "")
+        return self.scalar("title")
 
     @property
     def summary(self) -> str:
-        return self.front.get("summary", "")
+        return self.scalar("summary")
 
     @property
     def date(self) -> str:
-        return self.front.get("date", "")
+        return self.scalar("date")
 
     @property
-    def authors(self) -> list:
-        return self.front.get("authors", [])
+    def authors(self) -> list[str]:
+        return self.sequence("authors")
 
     @property
-    def reviewers(self) -> list:
-        return self.front.get("reviewers", [])
+    def reviewers(self) -> list[str]:
+        return self.sequence("reviewers")
 
     @property
     def status(self) -> dict:
-        status = self.front.get("status", {})
-        return status if isinstance(status, dict) else {}
+        """The status mapping, or {} when it is not a mapping of strings."""
+        status = self.front.get("status")
+        if not isinstance(status, dict):
+            return {}
+        if not all(isinstance(key, str) and isinstance(value, str) for key, value in status.items()):
+            return {}
+        return dict(status)
 
     @property
     def state(self) -> str:
-        return str(self.status.get("state", ""))
+        return self.status.get("state", "")
 
     @property
     def by(self) -> str | None:
-        by = self.status.get("by")
-        return by if isinstance(by, str) else None
+        return self.status.get("by")
 
     @property
-    def supersedes(self) -> list:
-        value = self.front.get("supersedes", [])
-        return value if isinstance(value, list) else []
+    def supersedes(self) -> list[str]:
+        return self.sequence("supersedes")
 
     @property
-    def legacy_bodies(self) -> list:
-        value = self.front.get("legacy_bodies", [])
-        return value if isinstance(value, list) else []
+    def legacy_bodies(self) -> list[str]:
+        return self.sequence("legacy_bodies")
 
     @property
     def headings(self) -> set[str]:
-        return {line.strip() for line in self.body.splitlines() if line.lstrip().startswith("#")}
+        """Canonical heading lines, exactly as written, outside code fences.
+
+        Two rules, both from the protocol: the comparison is whole-line and
+        literal, so an indented `  ## Context` is not `## Context`; and fenced
+        blocks are skipped, so a record whose only `## Decision` is inside a
+        ```markdown example does not satisfy the requirement.
+        """
+        headings: set[str] = set()
+        fenced = False
+        for line in self.body.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("```") or stripped.startswith("~~~"):
+                fenced = not fenced
+                continue
+            if fenced:
+                continue
+            if line.startswith("#"):
+                headings.add(line)
+        return headings
 
 
 @dataclass
 class Finding:
+    """One audit result.
+
+    `kind` exists because --strict is a policy about categories, not about
+    severity: it promotes `unmanaged` and `lint` findings to errors and leaves
+    `legacy` (bodies the protocol forbids rewriting) and `judgement` (heuristics
+    a human has to settle) as warnings forever.
+    """
+
     level: str  # "error" | "warning"
     where: str
     message: str
+    kind: str = "protocol"  # protocol | lint | unmanaged | legacy | judgement
 
 
 @dataclass
@@ -294,6 +405,19 @@ def discover(directory: Path) -> list[Path]:
 
 
 def load(directory: Path) -> Corpus:
+    """Read every record under `directory` into a Corpus.
+
+    Two things do not become records, and both are deliberate:
+
+    - the generated index, because it is a view of the records rather than one;
+    - any `.md` with no front matter, which is reported as *unmanaged* instead.
+      Forward-only adoption leaves such files alone, so they are a warning by
+      default and an error under --strict, but they are not failed silently and
+      not guessed at.
+
+    A file that fails to parse becomes an error finding, not an exception: one
+    broken record should not stop the audit of the other twenty.
+    """
     corpus = Corpus(directory=directory)
     for path in discover(directory):
         rel = path.relative_to(directory)
@@ -309,6 +433,7 @@ def load(directory: Path) -> Corpus:
                     "warning",
                     str(rel),
                     "no front matter: unmanaged file (an error under --strict)",
+                    kind="unmanaged",
                 )
             )
             continue
@@ -324,34 +449,75 @@ def load(directory: Path) -> Corpus:
 # --- Validation ------------------------------------------------------------
 
 
-def canonical_id(number: int) -> str:
-    """DR- plus four digits, widening for numbers that need more."""
+def canonicalize_id(number: int) -> str:
+    """Spell a record number as an id: DR- plus four digits, widening if needed.
+
+    The generation-side twin of ID_RE, which only matches. Renaming a record
+    number into its id and matching an existing id are different jobs, and the
+    two living in the same section read as duplicates.
+    """
     return f"DR-{number:0{max(4, len(str(number)))}d}"
 
 
-def _is_list(value) -> bool:
-    return isinstance(value, list)
+SCALAR_FIELDS = ("id", "title", "summary", "date")
+SEQUENCE_FIELDS = ("authors", "reviewers", "supersedes", "legacy_bodies")
 
 
 def check_record(record: Record, corpus: Corpus) -> list[Finding]:
+    """Validate one record's fields, shape and links.
+
+    Types come first, because every later check reads a field: a record whose
+    `id` is a sequence is reported as malformed and then skipped, rather than
+    crashing the comparison that follows.
+    """
     out: list[Finding] = []
     where = str(record.rel)
     legacy = record.id in corpus.legacy_ids()
-    # The exemption list itself is read after ids are known; a record cannot
-    # exempt itself by being listed in its own legacy_bodies.
+    front = record.front
 
     for name in REQUIRED_FIELDS:
-        if name not in record.front:
+        if name not in front:
             out.append(Finding("error", where, f"missing required field {name!r}"))
 
+    for name in SCALAR_FIELDS:
+        if name in front and not isinstance(front[name], str):
+            out.append(
+                Finding(
+                    "error",
+                    where,
+                    f"{name!r} must be a scalar, not {type(front[name]).__name__}",
+                )
+            )
+    for name in SEQUENCE_FIELDS:
+        if name in front and not (
+            isinstance(front[name], list) and all(isinstance(item, str) for item in front[name])
+        ):
+            out.append(
+                Finding(
+                    "error",
+                    where,
+                    f"{name!r} must be a flow sequence of scalars, not {type(front[name]).__name__}",
+                )
+            )
+    if "status" in front and not isinstance(front["status"], dict):
+        out.append(Finding("error", where, "status must be a block mapping"))
+    elif "status" in front and not all(
+        isinstance(value, str) for value in front["status"].values()
+    ):
+        out.append(Finding("error", where, "status values must be scalars"))
+
     match = ID_RE.match(record.id)
-    if not record.id:
+    if "id" not in front:
         pass  # already reported as a missing field
+    elif not isinstance(front["id"], str):
+        pass  # already reported as a type error
+    elif not record.id.strip():
+        out.append(Finding("error", where, "id is empty; a record needs its handle"))
     elif not match:
         out.append(Finding("error", where, f"id {record.id!r} is not DR-<4+ digits>"))
     else:
         number = int(match.group(1))
-        canonical = canonical_id(number)
+        canonical = canonicalize_id(number)
         if canonical != record.id:
             out.append(
                 Finding(
@@ -361,42 +527,40 @@ def check_record(record: Record, corpus: Corpus) -> list[Finding]:
                 )
             )
 
-    if "title" in record.front and not str(record.title).strip():
+    if "title" in front and isinstance(front["title"], str) and not record.title.strip():
         out.append(Finding("error", where, "title is empty"))
-    summary = str(record.summary)
-    if not summary.strip():
-        out.append(Finding("error", where, "summary is empty; it is the index line"))
-    elif len(summary) > SUMMARY_MAX:
-        out.append(
-            Finding("error", where, f"summary is {len(summary)} characters; limit {SUMMARY_MAX}")
-        )
-
+    if "summary" in front and isinstance(front["summary"], str):
+        if not record.summary.strip():
+            out.append(Finding("error", where, "summary is empty; it is the index line"))
+        elif len(record.summary) > SUMMARY_MAX:
+            out.append(
+                Finding(
+                    "error",
+                    where,
+                    f"summary is {len(record.summary)} characters; limit {SUMMARY_MAX}",
+                )
+            )
     if record.date:
         try:
-            datetime.date.fromisoformat(str(record.date))
+            datetime.date.fromisoformat(record.date)
         except ValueError:
             out.append(Finding("error", where, f"date {record.date!r} is not YYYY-MM-DD"))
-    elif "date" in record.front:
+    elif "date" in front and isinstance(front["date"], str):
         out.append(Finding("error", where, "date is empty"))
 
-    if not _is_list(record.authors):
-        out.append(Finding("error", where, "authors must be a flow sequence"))
-    elif not record.authors:
-        out.append(Finding("error", where, "authors is empty; name who reasoned it out"))
-
-    if not _is_list(record.reviewers):
-        out.append(Finding("error", where, "reviewers must be a flow sequence"))
-    elif not record.reviewers and record.state != "Draft":
-        out.append(
-            Finding(
-                "error",
-                where,
-                f"{record.state} record has no reviewers; a record nobody ratified is a Draft",
+    if "authors" in front and isinstance(front["authors"], list):
+        if not record.authors:
+            out.append(Finding("error", where, "authors is empty; name who reasoned it out"))
+    if "reviewers" in front and isinstance(front["reviewers"], list):
+        if not record.reviewers and record.state != "Draft":
+            out.append(
+                Finding(
+                    "error",
+                    where,
+                    f"{record.state} record has no reviewers; a record nobody ratified is a Draft",
+                )
             )
-        )
 
-    if not isinstance(record.front.get("status", {}), dict):
-        out.append(Finding("error", where, "status must be a block mapping"))
     state = record.state
     if state not in STATES:
         out.append(
@@ -405,63 +569,74 @@ def check_record(record: Record, corpus: Corpus) -> list[Finding]:
     needs_by = state in NEEDS_BY
     if needs_by and not record.by:
         out.append(Finding("error", where, f"{state} record needs status.by naming its cause"))
-    if not needs_by and record.by:
-        out.append(Finding("warning", where, f"status.by set on a {state} record; ignored"))
+    elif not needs_by and record.by:
+        # Junk metadata rather than a wrong decision: nothing reads it, nothing
+        # is misrepresented. Tolerated by default, fatal under --strict.
+        out.append(
+            Finding(
+                "warning",
+                where,
+                f"status.by is set on a record in state {state}, where it means nothing",
+                kind="lint",
+            )
+        )
 
-    if "status" in record.front and "date" in record.status:
+    if "date" in record.status:
         try:
-            datetime.date.fromisoformat(str(record.status["date"]))
+            datetime.date.fromisoformat(record.status["date"])
         except ValueError:
             out.append(
                 Finding("error", where, f"status.date {record.status['date']!r} is not YYYY-MM-DD")
             )
 
-    if not _is_list(record.front.get("supersedes", [])):
-        out.append(Finding("error", where, "supersedes must be a flow sequence"))
-    if not _is_list(record.front.get("legacy_bodies", [])):
-        out.append(Finding("error", where, "legacy_bodies must be a flow sequence"))
-
     headings = record.headings
-    for heading in REQUIRED_HEADINGS:
-        if heading not in headings:
-            if legacy:
-                out.append(
-                    Finding("warning", where, f"missing heading {heading!r} (legacy_bodies)")
-                )
-            else:
-                out.append(Finding("error", where, f"missing heading {heading!r}"))
-    if DO_NOTHING_HEADING not in headings:
+    for heading in (*REQUIRED_HEADINGS, DO_NOTHING_HEADING):
+        if heading in headings:
+            continue
         if legacy:
             out.append(
-                Finding("warning", where, f"missing heading {DO_NOTHING_HEADING!r} (legacy_bodies)")
+                Finding(
+                    "warning",
+                    where,
+                    f"missing heading {heading!r} (legacy_bodies)",
+                    kind="legacy",
+                )
             )
         else:
-            out.append(Finding("error", where, f"missing heading {DO_NOTHING_HEADING!r}"))
-    has_promotion = PROMOTION_HEADING in headings
-    if state == "Draft" and not has_promotion:
+            out.append(Finding("error", where, f"missing heading {heading!r}"))
+    if state == "Draft" and PROMOTION_HEADING not in headings:
         if legacy:
             out.append(
-                Finding("warning", where, f"missing heading {PROMOTION_HEADING!r} (legacy_bodies)")
+                Finding(
+                    "warning",
+                    where,
+                    f"missing heading {PROMOTION_HEADING!r} (legacy_bodies)",
+                    kind="legacy",
+                )
             )
         else:
             out.append(Finding("error", where, f"Draft record needs {PROMOTION_HEADING!r}"))
 
     slug = SLUG_RE.match(record.rel.stem)
+    expected = "NNNN-slug.md with a lowercase hyphenated slug"
     if not slug:
-        expected = "NNNN-slug.md with a lowercase hyphenated slug"
         out.append(
-            Finding("warning", where, f"filename is not {expected} (legacy_bodies)")
+            Finding(
+                "warning",
+                where,
+                f"filename is not {expected} (legacy_bodies)",
+                kind="legacy",
+            )
             if legacy
             else Finding("error", where, f"filename is not {expected}")
         )
-    elif record.id and match:
-        if slug.group(1) != match.group(1):
-            message = f"filename numbers {slug.group(1)} but id is {record.id}"
-            out.append(
-                Finding("warning", where, message + " (legacy_bodies)")
-                if legacy
-                else Finding("error", where, message)
-            )
+    elif record.id and match and slug.group(1) != match.group(1):
+        message = f"filename numbers {slug.group(1)} but id is {record.id}"
+        out.append(
+            Finding("warning", where, message + " (legacy_bodies)", kind="legacy")
+            if legacy
+            else Finding("error", where, message)
+        )
 
     for target in _relative_links(record.body):
         if not (record.path.parent / target).exists():
@@ -517,6 +692,14 @@ def check_graph(corpus: Corpus) -> list[Finding]:
         where = str(record.rel)
         if record.by and record.by not in ids:
             out.append(Finding("error", where, f"status.by {record.by} does not resolve"))
+        if record.id and record.by == record.id:
+            out.append(
+                Finding("error", where, "status.by names this record; it cannot be its own cause")
+            )
+        if record.id and record.id in record.supersedes:
+            out.append(
+                Finding("error", where, "supersedes lists this record; it cannot replace itself")
+            )
         for target_id in record.supersedes:
             target = corpus.by_id(str(target_id))
             if target is None:
@@ -581,11 +764,76 @@ def check_graph(corpus: Corpus) -> list[Finding]:
                         "warning",
                         str(record.rel),
                         f"legacy_bodies lists {listed}, whose body already conforms; prune it",
+                        kind="lint",
                     )
                 )
 
+    out.extend(_cycle_findings(corpus, ids))
     out.extend(_duplicate_titles(corpus))
     return out
+
+
+def _cycle_findings(corpus: Corpus, ids: dict[str, str]) -> list[Finding]:
+    """Reject supersession and cause cycles.
+
+    `supersedes` and `status.by` are opposite directions of the same relation —
+    a correct pair is `new.supersedes = [old]` with `old.status.by = new` — so
+    they are walked separately. Merging them into one graph would report every
+    correct supersession as a cycle.
+    """
+    supersession = {
+        record.id: [target for target in record.supersedes if target in ids]
+        for record in corpus.records
+        if record.id
+    }
+    cause = {
+        record.id: [record.by] if record.by in ids and record.by != record.id else []
+        for record in corpus.records
+        if record.id
+    }
+    out: list[Finding] = []
+    for label, graph in (("supersedes", supersession), ("status.by", cause)):
+        cycle = _find_cycle(graph)
+        if cycle:
+            out.append(
+                Finding(
+                    "error",
+                    ids[cycle[0]],
+                    f"{label} cycle: {' -> '.join(cycle)}",
+                )
+            )
+    return out
+
+
+def _find_cycle(graph: dict[str, list[str]]) -> list[str] | None:
+    """Depth-first walk returning one cycle as a path, or None if acyclic."""
+    UNVISITED, OPEN, DONE = 0, 1, 2
+    state = {node: UNVISITED for node in graph}
+    stack: list[str] = []
+    for start in graph:
+        if state[start] != UNVISITED:
+            continue
+        # Iterative so a long chain cannot exhaust the interpreter's stack.
+        work: list[tuple[str, bool]] = [(start, False)]
+        while work:
+            node, leaving = work.pop()
+            if leaving:
+                state[node] = DONE
+                if stack and stack[-1] == node:
+                    stack.pop()
+                continue
+            if state[node] == DONE:
+                continue
+            state[node] = OPEN
+            stack.append(node)
+            work.append((node, True))
+            for neighbour in graph.get(node, []):
+                if state[neighbour] == OPEN:
+                    start_of_cycle = stack.index(neighbour)
+                    return stack[start_of_cycle:] + [neighbour]
+                if state[neighbour] == UNVISITED:
+                    work.append((neighbour, False))
+    return None
 
 
 def _needs_legacy_exemption(record: Record) -> bool:
@@ -596,7 +844,11 @@ def _needs_legacy_exemption(record: Record) -> bool:
         return True
     if record.state == "Draft" and PROMOTION_HEADING not in headings:
         return True
-    return SLUG_RE.match(record.rel.stem) is None
+    slug = SLUG_RE.match(record.rel.stem)
+    if slug is None:
+        return True
+    match = ID_RE.match(record.id)
+    return bool(match) and slug.group(1) != match.group(1)
 
 
 def _duplicate_titles(corpus: Corpus) -> list[Finding]:
@@ -618,6 +870,7 @@ def _duplicate_titles(corpus: Corpus) -> list[Finding]:
                         str(second.rel),
                         f"title resembles {first.id} ({first.title!r}, {score:.0%} overlap); "
                         "has this already been decided?",
+                        kind="judgement",
                     )
                 )
     return out
@@ -631,7 +884,7 @@ def _sort_key(record: Record):
     return (int(match.group(1)) if match else 0, str(record.rel))
 
 
-def _row(record: Record, with_state: bool) -> str:
+def _row(record: Record, with_state: bool = True) -> str:
     target = record.rel.as_posix()
     link = f"[{record.id or '?'}]({target})"
     title = str(record.title).replace("|", "\\|")
@@ -642,7 +895,7 @@ def _row(record: Record, with_state: bool) -> str:
     return "| " + " | ".join(cells) + " |"
 
 
-def _table(records: list[Record], with_state: bool) -> list[str]:
+def _table(records: list[Record], with_state: bool = True) -> list[str]:
     header = "| Record | Title | Decision |" + (" State |" if with_state else "")
     rule = "| --- | --- | --- |" + (" --- |" if with_state else "")
     rows = [_row(record, with_state) for record in sorted(records, key=_sort_key)]
@@ -656,15 +909,17 @@ def render_index(corpus: Corpus, preamble: str) -> str:
     lines = [preamble.rstrip(), "", INDEX_MARKER, ""]
     if live:
         lines += ["## Live", ""]
-        lines += _table(live, with_state=False)
+        # State stays visible on live rows: Draft is not binding, and a reader
+        # scanning the index should be able to see that it is reading a draft.
+        lines += _table(live)
         lines += [""]
     if historical:
         lines += ["## Historical", ""]
-        lines += _table(historical, with_state=True)
+        lines += _table(historical)
         lines += [""]
     if other:
         lines += ["## Unclassified", ""]
-        lines += _table(other, with_state=True)
+        lines += _table(other)
         lines += [""]
     if not (live or historical or other):
         lines += ["No records yet.", ""]
@@ -713,7 +968,7 @@ def cmd_new(args: argparse.Namespace) -> int:
     corpus = load(directory) if directory.is_dir() else Corpus(directory=directory)
     numbers = [int(ID_RE.match(r.id).group(1)) for r in corpus.records if ID_RE.match(r.id)]
     number = (max(numbers) + 1) if numbers else 1
-    issue_id = canonical_id(number)
+    issue_id = canonicalize_id(number)
     slug = re.sub(r"[^a-z0-9]+", "-", args.title.lower()).strip("-")
     if not slug:
         raise DrsError("title has no alphanumerics to build a filename from")
@@ -738,6 +993,14 @@ def cmd_new(args: argparse.Namespace) -> int:
     )
     if "{{" in text:
         raise DrsError("template has an unsubstituted placeholder")
+    # Parse what we are about to write. A scaffold the tool itself rejects is
+    # worse than no scaffold: the failure surfaces after the author has started
+    # writing, and looks like their mistake.
+    try:
+        front_lines, _ = split_document(text, path)
+        parse_front_matter(front_lines or [], path)
+    except FrontMatterError as exc:
+        raise DrsError(f"refusing to write a record that would not parse: {exc}") from exc
     directory.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     print(path)
@@ -780,10 +1043,10 @@ def cmd_check(args: argparse.Namespace) -> int:
     findings.extend(check_graph(corpus))
     findings.extend(check_index(corpus))
 
-    strict = args.strict
-    for finding in findings:
-        if strict and finding.level == "warning" and "unmanaged" in finding.message:
-            finding.level = "error"
+    if args.strict:
+        for finding in findings:
+            if finding.level == "warning" and finding.kind in STRICT_PROMOTES:
+                finding.level = "error"
     errors = [f for f in findings if f.level == "error"]
     warnings = [f for f in findings if f.level == "warning"]
     for finding in errors + warnings:
@@ -812,7 +1075,12 @@ def main(argv: list[str] | None = None) -> int:
     index.set_defaults(func=cmd_index)
 
     check = commands.add_parser("check", help="audit the record set")
-    check.add_argument("--strict", action="store_true", help="every file must be a managed record")
+    check.add_argument(
+        "--strict",
+        action="store_true",
+        help="fail on tolerated findings too: unmanaged files and junk metadata "
+        "(adoption exemptions and duplicate-title warnings stay warnings)",
+    )
     check.set_defaults(func=cmd_check)
 
     # Accept --dir on either side of the subcommand without letting the

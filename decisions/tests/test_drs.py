@@ -110,7 +110,7 @@ class CorpusCase(unittest.TestCase):
         findings.extend(drs.check_index(corpus))
         if strict:
             for finding in findings:
-                if finding.level == "warning" and "unmanaged" in finding.message:
+                if finding.level == "warning" and finding.kind in drs.STRICT_PROMOTES:
                     finding.level = "error"
         return findings
 
@@ -227,6 +227,31 @@ class RecordShape(CorpusCase):
         self.write("0030-b.md", front_matter(id="DR-00030", title="Also Thirty") + BODY)
         self.assertTrue(any("same record number" in e for e in self.errors()))
 
+    def test_empty_id_is_reported(self):
+        self.record(1, front_matter(id="") + BODY)
+        self.assertIn("id is empty; a record needs its handle", self.errors())
+
+    def test_a_sequence_where_a_scalar_belongs_is_a_finding(self):
+        # Inject the raw line: front_matter() quotes its arguments, and quoting
+        # is exactly what this case must not do.
+        text = front_matter().replace('id: "DR-0001"', 'id: ["DR-0001"]')
+        self.record(1, text + BODY)
+        self.assertIn("'id' must be a scalar, not list", self.errors())
+
+    def test_a_sequence_title_does_not_reach_the_index(self):
+        text = front_matter().replace('title: "A Decision"', 'title: ["A", "B"]')
+        self.record(1, text + BODY, slug="a")
+        text2 = front_matter(id="DR-0002").replace('title: "A Decision"', 'title: ["A", "B"]')
+        self.record(2, text2 + BODY, slug="b")
+        self.assertIn("'title' must be a scalar, not list", self.errors())
+        written = self.index()
+        self.assertNotIn("['A', 'B']", written)
+
+    def test_status_values_must_be_scalars(self):
+        text = front_matter().replace('  state: "Accepted"', '  state: ["Accepted"]')
+        self.record(1, text + BODY)
+        self.assertIn("status values must be scalars", self.errors())
+
     def test_date_must_be_iso(self):
         self.record(1, front_matter(date="23/11/2026") + BODY)
         self.assertIn("date '23/11/2026' is not YYYY-MM-DD", self.errors())
@@ -290,6 +315,16 @@ class Headings(CorpusCase):
         self.index()
         self.assertEqual(self.errors(), [])
 
+    def test_an_indented_heading_is_not_canonical(self):
+        self.record(1, front_matter() + BODY.replace("## Decision", "  ## Decision"))
+        self.assertIn("missing heading '## Decision'", self.errors())
+
+    def test_headings_inside_a_fence_do_not_count(self):
+        fenced = "\n".join("```markdown" if line == "## Decision" else line for line in BODY.splitlines())
+        fenced = fenced.replace("```markdown", "```markdown\n## Decision", 1)
+        self.record(1, front_matter() + fenced)
+        self.assertIn("missing heading '## Decision'", self.errors())
+
     def test_heading_must_be_canonical(self):
         self.record(1, front_matter(state="Draft") + DRAFT_BODY.replace("## Promotion", "## Promotion:"))
         self.assertIn("Draft record needs '## Promotion'", self.errors())
@@ -346,10 +381,56 @@ class Graph(CorpusCase):
         self.record(1, front_matter(state="Amended", by="DR-0009") + BODY)
         self.assertIn("status.by DR-0009 does not resolve", self.errors())
 
-    def test_by_on_accepted_is_a_warning(self):
+    def test_by_on_off_state_warns_then_fails_strict(self):
         self.record(1, front_matter(by="DR-0002") + BODY, slug="a")
         self.record(2, front_matter(id="DR-0002") + BODY, slug="b")
-        self.assertTrue(any("status.by set on a Accepted record" in w for w in self.warnings()))
+        self.index()
+        message = "status.by is set on a record in state Accepted, where it means nothing"
+        self.assertIn(message, self.warnings())
+        self.assertNotIn(message, self.errors())
+        self.assertIn(message, self.errors(strict=True))
+
+    def test_status_by_cannot_name_itself(self):
+        self.record(1, front_matter(state="Amended", by="DR-0001") + BODY)
+        self.assertIn(
+            "status.by names this record; it cannot be its own cause", self.errors()
+        )
+
+    def test_a_record_cannot_supersede_itself(self):
+        self.record(
+            1,
+            front_matter(state="Superseded", by="DR-0001", supersedes='["DR-0001"]') + BODY,
+        )
+        self.assertIn("supersedes lists this record; it cannot replace itself", self.errors())
+
+    def test_two_record_supersession_cycle(self):
+        self.record(
+            1,
+            front_matter(id="DR-0001", state="Superseded", by="DR-0002", supersedes='["DR-0002"]')
+            + BODY,
+            slug="a",
+        )
+        self.record(
+            2,
+            front_matter(id="DR-0002", state="Superseded", by="DR-0001", supersedes='["DR-0001"]')
+            + BODY,
+            slug="b",
+        )
+        self.assertTrue(any("supersedes cycle" in e for e in self.errors()), self.errors())
+
+    def test_status_by_cycle(self):
+        self.record(1, front_matter(id="DR-0001", state="Amended", by="DR-0002") + BODY, slug="a")
+        self.record(2, front_matter(id="DR-0002", state="Amended", by="DR-0001") + BODY, slug="b")
+        self.assertTrue(any("status.by cycle" in e for e in self.errors()), self.errors())
+
+    def test_a_valid_chain_is_not_a_cycle(self):
+        self.record(1, front_matter(id="DR-0001", state="Superseded", by="DR-0003") + BODY, slug="a")
+        self.record(2, front_matter(id="DR-0002", state="Superseded", by="DR-0003") + BODY, slug="b")
+        self.record(
+            3, front_matter(id="DR-0003", supersedes='["DR-0001", "DR-0002"]') + BODY, slug="c"
+        )
+        self.index()
+        self.assertEqual(self.errors(), [])
 
     def test_duplicate_ids(self):
         self.record(1, front_matter() + BODY, slug="a")
@@ -400,6 +481,16 @@ class LegacyBodies(CorpusCase):
             self.errors(),
         )
 
+    def test_a_listed_number_mismatch_is_not_called_conforming(self):
+        self.write("0003-a.md", front_matter(id="DR-0001") + BODY)
+        self.record(
+            2,
+            front_matter(id="DR-0002", title="Adoption", legacy_bodies='["DR-0001"]') + BODY,
+            slug="adoption",
+        )
+        self.assertFalse(any("already conforms; prune it" in w for w in self.warnings()))
+        self.assertIn("filename numbers 0003 but id is DR-0001 (legacy_bodies)", self.warnings())
+
     def test_listing_a_conforming_record_warns(self):
         self.record(1, front_matter() + BODY, slug="a")
         self.record(
@@ -424,6 +515,30 @@ class LegacyBodies(CorpusCase):
         self.index()
         self.assertIn("filename numbers 2026 but id is DR-0001", self.errors())
         self.assertIn("filename numbers 2026 but id is DR-0001", self.errors(strict=True))
+
+
+class StrictPolicy(CorpusCase):
+    """--strict promotes unmanaged files and junk metadata, and nothing else."""
+
+    def test_judgement_warnings_survive_strict(self):
+        self.record(1, front_matter(title="Workstation management boundary") + BODY, slug="a")
+        self.record(
+            2, front_matter(id="DR-0002", title="Workstation boundary management") + BODY, slug="b"
+        )
+        self.index()
+        self.assertTrue(any("has this already been decided" in w for w in self.warnings(strict=True)))
+        self.assertEqual(self.errors(strict=True), [])
+
+    def test_a_prune_warning_fails_strict(self):
+        self.record(1, front_matter() + BODY, slug="a")
+        self.record(
+            2,
+            front_matter(id="DR-0002", title="Adoption", legacy_bodies='["DR-0001"]') + BODY,
+            slug="adoption",
+        )
+        self.index()
+        self.assertEqual(self.errors(), [])
+        self.assertTrue(any("prune it" in e for e in self.errors(strict=True)))
 
 
 class UnmanagedFiles(CorpusCase):
@@ -489,6 +604,15 @@ class Index(CorpusCase):
         self.record(1, front_matter() + BODY)
         self.assertIn("index is missing; run `drs.py index`", self.errors())
 
+    def test_live_rows_show_their_state(self):
+        self.record(1, front_matter(state="Draft") + DRAFT_BODY, slug="draft")
+        self.record(2, front_matter(id="DR-0002", title="Second") + BODY, slug="second")
+        text = self.index()
+        live = text.split("## Live", 1)[1]
+        self.assertIn(" State |", live)
+        self.assertIn("| Draft |", live)
+        self.assertIn("| Accepted |", live)
+
     def test_pipe_in_a_summary_is_escaped(self):
         self.record(1, front_matter(summary="A | B") + BODY)
         self.assertIn("A \\| B", self.index())
@@ -523,6 +647,19 @@ class NewRecord(CorpusCase):
         self.new("Reviewed", author="A Human", reviewer=["One", "Two"])
         text = (self.dir / "0001-reviewed.md").read_text(encoding="utf-8")
         self.assertIn('reviewers: ["One", "Two"]', text)
+
+    def test_authors_with_quotes_commas_and_backslashes_round_trip(self):
+        awkward = 'A "quoted, person" \\ backslash'
+        self.new("Awkward authors", author=awkward, reviewer=['R "one, two"'])
+        self.index()
+        # The scaffold's own empty summary is the only finding it may have.
+        self.assertEqual(self.errors(), ["summary is empty; it is the index line"])
+        path = self.dir / "0001-awkward-authors.md"
+        parsed = drs.parse_front_matter(
+            drs.split_document(path.read_text(encoding="utf-8"), path)[0], path
+        )
+        self.assertEqual(parsed["authors"], [awkward])
+        self.assertEqual(parsed["reviewers"], ['R "one, two"'])
 
     def test_title_is_escaped(self):
         self.new('A "quoted" thing', author="A Human", reviewer=None)
