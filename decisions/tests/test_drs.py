@@ -637,6 +637,125 @@ class Index(CorpusCase):
         )
         self.assertEqual(self.errors(), [])
 
+    def test_a_row_in_the_wrong_section_is_reported(self):
+        # The section tells a reader whether a decision is live. Moving an
+        # Accepted row under Historical is a lie about content, not layout.
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        moved = text.replace("## Live", "## Historical")
+        (self.dir / "README.md").write_text(moved, encoding="utf-8")
+        self.assertEqual(
+            [
+                "index places DR-0001 under Historical, but it is Accepted, "
+                "which belongs under Live"
+            ],
+            [f for f in self.errors() if "places DR-0001" in f],
+        )
+
+    def test_a_row_outside_any_section_is_reported(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        (self.dir / "README.md").write_text(text.replace("## Live\n\n", ""), encoding="utf-8")
+        self.assertTrue(
+            any("under no heading" in error for error in self.errors()), self.errors()
+        )
+
+    def test_a_duplicated_row_is_reported(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        row = [line for line in text.splitlines() if line.startswith("| [DR-0001]")][0]
+        stale = row.replace("| Accepted |", "| Draft |")
+        (self.dir / "README.md").write_text(text + stale + "\n", encoding="utf-8")
+        self.assertTrue(
+            any("index lists DR-0001 more than once" in error for error in self.errors()),
+            self.errors(),
+        )
+
+    def test_a_missing_marker_is_an_error(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        (self.dir / "README.md").write_text(text.replace(drs.INDEX_MARKER, ""), encoding="utf-8")
+        self.assertTrue(any("no generated-section marker" in error for error in self.errors()))
+
+    def test_index_refuses_to_regenerate_without_a_marker(self):
+        # The old fallback treated the whole file as preamble and appended a
+        # second generated section. Refusing is the only honest answer.
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        (self.dir / "README.md").write_text(text.replace(drs.INDEX_MARKER, ""), encoding="utf-8")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            code = drs.main(["--dir", str(self.dir), "index"])
+        self.assertEqual(code, 1)
+        self.assertIn("has no generated-section marker", err.getvalue())
+
+    def test_check_index_check_does_not_duplicate_the_index(self):
+        # The regression that let two reviews disagree: a markerless index
+        # passed `check`, then regenerating duplicated the whole table.
+        self.record(1, front_matter() + BODY)
+        self.index()
+        path = self.dir / "README.md"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(drs.INDEX_MARKER, ""), encoding="utf-8"
+        )
+        self.assertTrue(self.errors())
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(drs.main(["--dir", str(self.dir), "index"]), 1)
+        self.assertEqual(path.read_text(encoding="utf-8").count("| [DR-0001]"), 1)
+
+    def test_a_legacy_filename_with_parentheses_round_trips(self):
+        self.write("0001-a_(old).md", front_matter() + BODY)
+        self.record(
+            2,
+            front_matter(id="DR-0002", title="Adoption", legacy_bodies='["DR-0001"]') + BODY,
+            slug="adoption",
+        )
+        self.index()
+        self.assertFalse(
+            any("link differs" in error for error in self.errors()), self.errors()
+        )
+
+    def test_an_unreadable_row_names_the_line(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        (self.dir / "README.md").write_text(
+            text + "| DR-0001 | no link | Nothing. | Accepted |\n", encoding="utf-8"
+        )
+        self.assertTrue(
+            any("index row could not be read" in error for error in self.errors()),
+            self.errors(),
+        )
+
+    def test_prose_below_the_marker_warns_and_fails_strict(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        (self.dir / "README.md").write_text(
+            text + "\nA note a human added, which the next run would delete.\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(
+            any("will be replaced" in warning for warning in self.warnings()),
+            self.warnings(),
+        )
+        self.assertTrue(any("will be replaced" in error for error in self.errors(strict=True)))
+
+    def test_title_and_link_mismatches_name_their_field(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        (self.dir / "README.md").write_text(
+            text.replace("| A Decision |", "| A Different Decision |"), encoding="utf-8"
+        )
+        self.assertIn(
+            "index is out of date for DR-0001: title differs; run `drs.py index`", self.errors()
+        )
+        (self.dir / "README.md").write_text(
+            text.replace("(0001-a-decision.md)", "(0001-something-else.md)"), encoding="utf-8"
+        )
+        self.assertIn(
+            "index is out of date for DR-0001: link differs; run `drs.py index`", self.errors()
+        )
+
     def test_a_wrong_state_in_the_index_is_reported(self):
         self.record(1, front_matter() + BODY)
         text = self.index()

@@ -931,13 +931,23 @@ def render_index(corpus: Corpus, preamble: str) -> str:
 
 
 def existing_preamble(directory: Path) -> str:
+    """The hand-written part of an existing index, above the marker.
+
+    A file without the marker is refused rather than guessed at: the generator
+    cannot tell a reader's prose from its own previous output, and the guess it
+    used to make -- treat everything as preamble and append a fresh section --
+    silently duplicated the whole index on the next regeneration.
+    """
     path = directory / INDEX_NAME
     if not path.exists():
         return DEFAULT_PREAMBLE
     text = path.read_text(encoding="utf-8")
-    if INDEX_MARKER in text:
-        return text.split(INDEX_MARKER, 1)[0].rstrip() + "\n"
-    return text.rstrip() + "\n"
+    if INDEX_MARKER not in text:
+        raise DrsError(
+            f"{path} has no generated-section marker ({INDEX_MARKER}); move anything "
+            "you wrote above a line with that marker, or delete the file and regenerate"
+        )
+    return text.split(INDEX_MARKER, 1)[0].rstrip() + "\n"
 
 
 def _cells(line: str) -> list[str]:
@@ -961,31 +971,99 @@ def _cells(line: str) -> list[str]:
     return cells[1:-1] if len(cells) > 1 and not cells[0] and not cells[-1] else cells
 
 
-def parse_index_rows(text: str) -> dict[str, tuple[str, str, str, str]]:
-    """Read the index's tables back into {id: (link, title, summary, state)}.
+SECTION_FOR_STATE = {
+    "Draft": "Live",
+    "Accepted": "Live",
+    "Amended": "Live",
+    "Deprecated": "Historical",
+    "Superseded": "Historical",
+}
+SECTION_FOR_UNKNOWN_STATE = "Unclassified"
 
-    The index is a document a human reads, so a formatter may pad its cells,
-    align its separators, or reflow the preamble above it. The audit therefore
-    compares *content* -- which records a reader would find there, with which
-    decision and state -- rather than bytes. Byte equality would make the
-    generator and any formatter permanently wrong about each other.
+
+@dataclass
+class IndexRow:
+    """One row of the index, as a reader finds it."""
+
+    section: str
+    id: str
+    link: str
+    title: str
+    summary: str
+    state: str
+    line: int
+
+
+def parse_index(text: str, where: str = INDEX_NAME) -> tuple[list[IndexRow], list[Finding]]:
+    """Read the index back the way a reader sees it.
+
+    The index is a document a human scans, so a formatter may pad its cells,
+    align its separators, reorder nothing, and reflow the preamble above it.
+    What this returns is therefore content: every row with the section it sits
+    under, in file order, so duplicates stay visible. Comparing bytes would make
+    the generator and any formatter permanently wrong about each other; folding
+    rows into a dict would make a duplicated row, and a row in the wrong
+    section, invisible to the reader and to the audit alike.
     """
-    rows: dict[str, tuple[str, str, str, str]] = {}
-    body = text.split(INDEX_MARKER, 1)[1] if INDEX_MARKER in text else text
-    for line in body.splitlines():
+    if INDEX_MARKER not in text:
+        return [], [
+            Finding(
+                "error",
+                where,
+                "index has no generated-section marker; everything below that line "
+                "is regenerated, so the generator cannot tell your prose from its own "
+                "output (move the prose above the marker, or delete the file and run "
+                "`drs.py index`)",
+            )
+        ]
+
+    rows: list[IndexRow] = []
+    findings: list[Finding] = []
+    section = ""
+    body = text.split(INDEX_MARKER, 1)[1]
+    for lineno, line in enumerate(body.splitlines(), start=1):
         stripped = line.strip()
-        if not stripped.startswith("|"):
+        if not stripped or stripped == "No records yet.":
             continue
-        cells = _cells(stripped)
-        if len(cells) < 3 or set(cells[0]) <= {"-", ":"}:
-            continue  # separator row
-        match = re.match(r"\[([^\]]+)\]\(([^)]+)\)", cells[0])
-        if not match:
+        if stripped.startswith("## "):
+            section = stripped[3:].strip()
             continue
-        issue_id = match.group(1).strip()
-        state = cells[3] if len(cells) > 3 else ""
-        rows[issue_id] = (match.group(2).strip(), cells[1], cells[2], state)
-    return rows
+        if stripped.startswith("|"):
+            cells = _cells(stripped)
+            if len(cells) < 3 or cells[0] in ("Record", "") or set(cells[0]) <= {"-", ":"}:
+                continue  # header row or separator row
+            match = re.match(r"^\[([^\]]+)\]\((.+)\)$", cells[0])
+            if not match:
+                findings.append(
+                    Finding(
+                        "error",
+                        where,
+                        f"index row could not be read (line {lineno}): {stripped[:60]}",
+                    )
+                )
+                continue
+            rows.append(
+                IndexRow(
+                    section=section,
+                    id=match.group(1).strip(),
+                    link=match.group(2).strip(),
+                    title=cells[1],
+                    summary=cells[2],
+                    state=cells[3] if len(cells) > 3 else "",
+                    line=lineno,
+                )
+            )
+            continue
+        findings.append(
+            Finding(
+                "warning",
+                where,
+                f"line {lineno} sits below the generated marker and will be replaced "
+                f"on the next `drs.py index`: {stripped[:60]}",
+                kind="lint",
+            )
+        )
+    return rows, findings
 
 
 def check_index(corpus: Corpus) -> list[Finding]:
@@ -993,30 +1071,41 @@ def check_index(corpus: Corpus) -> list[Finding]:
     path = corpus.directory / INDEX_NAME
     if not path.exists():
         return [Finding("error", INDEX_NAME, "index is missing; run `drs.py index`")]
-    listed = parse_index_rows(path.read_text(encoding="utf-8"))
-    expected = {
-        record.id: (record.rel.as_posix(), record.title, record.summary, record.state)
-        for record in corpus.records
-        if record.id
-    }
-    out: list[Finding] = []
-    for issue_id in sorted(set(expected) - set(listed)):
+    rows, out = parse_index(path.read_text(encoding="utf-8"))
+
+    seen: dict[str, int] = {}
+    for row in rows:
+        if row.id in seen:
+            out.append(
+                Finding(
+                    "error",
+                    INDEX_NAME,
+                    f"index lists {row.id} more than once (lines {seen[row.id]} and "
+                    f"{row.line}); a reader cannot tell which row is current",
+                )
+            )
+            continue
+        seen[row.id] = row.line
+    listed: dict[str, IndexRow] = {row.id: row for row in rows}
+
+    records = {record.id: record for record in corpus.records if record.id}
+    for issue_id in sorted(set(records) - set(listed)):
         out.append(
             Finding("error", INDEX_NAME, f"index is missing {issue_id}; run `drs.py index`")
         )
-    for issue_id in sorted(set(listed) - set(expected)):
+    for issue_id in sorted(set(listed) - set(records)):
         out.append(
             Finding("error", INDEX_NAME, f"index lists {issue_id}, which is not a record")
         )
-    for issue_id in sorted(set(listed) & set(expected)):
-        link, title, summary, state = listed[issue_id]
-        fields = (("link", link), ("title", title), ("summary", summary), ("state", state))
-        want = expected[issue_id]
-        wrong = [
-            name
-            for (name, got), wanted in zip(fields, want)
-            if got != wanted
-        ]
+    for issue_id in sorted(set(listed) & set(records)):
+        row, record = listed[issue_id], records[issue_id]
+        fields = (
+            ("link", row.link, record.rel.as_posix()),
+            ("title", row.title, record.title),
+            ("summary", row.summary, record.summary),
+            ("state", row.state, record.state),
+        )
+        wrong = [name for name, got, want in fields if got != want]
         if wrong:
             out.append(
                 Finding(
@@ -1026,10 +1115,17 @@ def check_index(corpus: Corpus) -> list[Finding]:
                     "differs; run `drs.py index`",
                 )
             )
+        want_section = SECTION_FOR_STATE.get(record.state, SECTION_FOR_UNKNOWN_STATE)
+        if row.section != want_section:
+            out.append(
+                Finding(
+                    "error",
+                    INDEX_NAME,
+                    f"index places {issue_id} under {row.section or 'no heading'}, but it is "
+                    f"{record.state or 'in no state'}, which belongs under {want_section}",
+                )
+            )
     return out
-
-
-# --- Commands --------------------------------------------------------------
 
 
 def find_records_dir(explicit: str | None) -> Path:
