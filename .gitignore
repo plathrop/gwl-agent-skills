@@ -1,0 +1,4 @@
+# Python bytecode. The skills' test suites are run with the interpreter
+# directly, so a stray run drops caches next to the sources.
+__pycache__/
+*.py[cod]
