@@ -199,7 +199,9 @@ records, or at least not these.
 
 **File naming**: `NNNN-slug.md`, where `NNNN` matches `id` and `slug` is a
 short lowercase hyphenated version of the title. Numbers are never reused
-and never reordered. A mismatch between filename and id is an error, except
+and never reordered, and they record **allocation order, not chronology**: a
+reconstructed decision keeps its original `date` and takes the next free id, so
+the index carries the date for exactly this reason. A mismatch between filename and id is an error, except
 for records listed in an adoption record's `legacy_bodies`, where it is a
 warning: adoption keeps legacy filenames because renaming them breaks
 inbound links from specs and instructions that are often immutable by
@@ -479,6 +481,9 @@ verifies is what a reader would take from the page:
 
 - every record has a row, and no record has two. A stale row beside the current
   one is a contradiction the reader cannot resolve;
+- each row carries the record's decision date. Ids are allocation order, not
+  chronology — a reconstructed record can hold an early date and a late id — and
+  without the date a reader cannot see where that happened;
 - each row's link, title, decision and state still match the record it names;
 - each row sits under the section its state implies — `Live` for a live state,
   `Historical` otherwise. A binding decision filed under "what we replaced" is
@@ -537,24 +542,35 @@ When a repository does need its whole set migrated, retrofit **in place**.
 Do it **before** scaffolding any new record: `drs.py new` allocates the next id
 from *managed* records only, so on an all-legacy corpus it will hand out
 `DR-0001` to a record written today, and the retrofit then has to renumber
-around it. `new` warns when it sees unmanaged files for this reason.
+around it. `new` **refuses** when it sees unmanaged files for this reason, naming the
+count and telling you to retrofit first. `--force` allocates anyway, which is
+what forward-only adoption wants; the blast radius of getting the order wrong is
+corpus-wide renumbering, so it takes a deliberate word rather than a warning
+line.
 
 1. **Add front matter to the existing files; change no body.** Mint ids in
    chronological order, write the `summary` line, set `state` from what
    the record actually is — not from what its old status line claims,
    which may have gone stale when a superseding record was written and
    nobody returned to correct it.
-2. **Keep `date:` as the original decision date**, not the retrofit date.
+2. **A body that carries a dated pre-protocol amendment stays `Accepted`.** A
+   record whose body says "Amendment (2026-09-12)" and gives no justifying
+   record cannot enter `Amended` — that state is defined by a named record, and
+   inventing one to satisfy the field fabricates history. Set the state to the
+   record's *current standing* and leave the amendment where it is: the body as
+   published is the decision, and the note inside it is evidence of how it got
+   there.
+3. **Keep `date:` as the original decision date**, not the retrofit date.
    `date` means when the decision was made; a retrofit does not make it
    again.
-3. **Allow filename/id mismatches for legacy files.** Renaming them
+4. **Allow filename/id mismatches for legacy files.** Renaming them
    breaks inbound links from specs, code comments, and instructions that
    are often immutable by convention — and `check` will not tell you, because
    it follows links out of records rather than into them. Keep the paths; the
    index is what bridges id to path. If a rename is genuinely wanted, grep the
    repository for the old path first, then treat it as a separate change with
    its own review.
-4. **Record the adoption in one record**, carrying `legacy_bodies`: the
+5. **Record the adoption in one record**, carrying `legacy_bodies`: the
    ids of the records whose bodies predate this section format, with a
    reason per entry in its prose. Enumerated, not a blanket exemption — a
    blanket exemption becomes where future sloppiness hides, while adding a
@@ -597,6 +613,12 @@ decision that did change and was never written down. The distinction is
 evidence: an archived change plus the review that accepted it, not an inference
 from the code. If that evidence does not exist, the decision belongs to
 whichever record *does* explain it, or to none.
+
+Claim only what the evidence supports. `authors` names whoever is accountable
+for the reconstruction and anyone the evidence names as having decided; where
+the drafting model is unrecorded — a change from before agents signed their work
+— say so in References rather than inventing a name. A record that admits what
+it cannot verify is worth more than one with a plausible blank filled in.
 
 It is also the one legitimate exception to *do not write a record for a decision
 you have already implemented*: the implementation is not the reason for the

@@ -22,7 +22,7 @@ somebody ratifies, in repositories that have reviews.
 | [`references/writing.md`](references/writing.md) | Depth for drafting: worked good/bad examples per section, how to write a summary line and a rubric record, how to write an amendment justification.           |
 | [`assets/template.md`](assets/template.md)       | What `drs.py new` copies.                                                                                                                                     |
 | [`scripts/drs.py`](scripts/drs.py)               | `new`, `index`, `check`. Python 3.11+, standard library only.                                                                                                 |
-| [`tests/test_drs.py`](tests/test_drs.py)         | 106 tests, stdlib `unittest`.                                                                                                                                 |
+| [`tests/test_drs.py`](tests/test_drs.py)         | 107 tests, stdlib `unittest`.                                                                                                                                 |
 
 ## Setup
 
@@ -126,6 +126,13 @@ next regeneration would delete. A later round closed the same gap twice more,
 both cheaply: pipes in a legacy filename are escaped in the link target, and a
 title or summary with surrounding whitespace is rejected at the record
 boundary, because a table cell can carry neither.
+
+**The index carries dates, because ids are allocation order.** The second
+adoption found this: a reconstructed record took the next free id while keeping
+its original decision date, so it sorted between two later decisions with
+nothing on the page to explain why. Sorting by date instead of id was the
+alternative, and worse — ids are the handle people search for. One column keeps
+both readable.
 
 **The dialect accepts formatter output, not just hand-written input.** The
 first full adoption found this the hard way: a record with seventeen
