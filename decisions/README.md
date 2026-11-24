@@ -121,7 +121,10 @@ generator's. All three are content, all three became invisible, and the shape of
 the bug was the same each time — a parse that describes the cells instead of the
 document. The check now returns rows in file order with their section, refuses
 to guess at a markerless file, and reports any text below the marker that the
-next regeneration would delete.
+next regeneration would delete. A later round closed the same gap twice more,
+both cheaply: pipes in a legacy filename are escaped in the link target, and a
+title or summary with surrounding whitespace is rejected at the record
+boundary, because a table cell can carry neither.
 
 **Standard library only, and no YAML parser.** A skill is adopted by copying a
 directory into an agent's skill tree, so a dependency the host must install

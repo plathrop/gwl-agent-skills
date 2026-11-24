@@ -716,6 +716,55 @@ class Index(CorpusCase):
             any("link differs" in error for error in self.errors()), self.errors()
         )
 
+    def test_a_pipe_in_a_legacy_filename_round_trips(self):
+        # Legal on disk, illegal in a table cell unless escaped. The legacy
+        # exemption exists so such a record stays readable, not so it breaks
+        # the index.
+        self.write("0001-a|old.md", front_matter() + BODY)
+        self.record(
+            2,
+            front_matter(id="DR-0002", title="Adoption", legacy_bodies='["DR-0001"]') + BODY,
+            slug="adoption",
+        )
+        self.index()
+        errors = self.errors()
+        self.assertFalse(
+            any("could not be read" in error or "missing DR-0001" in error for error in errors),
+            errors,
+        )
+
+    def test_surrounding_whitespace_in_a_title_is_rejected(self):
+        # The index is a table: a cell cannot carry leading whitespace, and
+        # trimming it silently would make the index say something the record
+        # does not.
+        text = front_matter().replace('title: "A Decision"', 'title: " A Decision"')
+        self.record(1, text + BODY)
+        self.assertIn(
+            "'title' has leading or trailing whitespace; the index is a table and "
+            "cannot carry it — trim the value",
+            self.errors(),
+        )
+
+    def test_surrounding_whitespace_in_a_summary_is_rejected(self):
+        text = front_matter().replace('summary: "Do the thing."', 'summary: "Do the thing. "')
+        self.record(1, text + BODY)
+        self.assertTrue(
+            any("'summary' has leading or trailing whitespace" in e for e in self.errors()),
+            self.errors(),
+        )
+
+    def test_line_numbers_are_file_line_numbers(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        junk = "| DR-0001 | no link | Nothing. | Accepted |"
+        (self.dir / "README.md").write_text(text + junk + "\n", encoding="utf-8")
+        # Find the line the junk row actually sits on, 1-based.
+        written = (self.dir / "README.md").read_text(encoding="utf-8").splitlines()
+        expected = written.index(junk) + 1
+        findings = [e for e in self.errors() if "could not be read" in e]
+        self.assertEqual(1, len(findings), findings)
+        self.assertIn(f"(line {expected})", findings[0])
+
     def test_an_unreadable_row_names_the_line(self):
         self.record(1, front_matter() + BODY)
         text = self.index()

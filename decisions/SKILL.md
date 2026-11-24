@@ -162,6 +162,10 @@ supersedes: []
 | `supersedes`    | when this record supersedes anything                   | The ids it replaces.                                                                                                                                |
 | `legacy_bodies` | on an adoption record                                  | Ids whose bodies predate this section format. Demotes their heading and filename checks to warnings; changes nothing else.                          |
 
+Titles and summaries carry no leading or trailing whitespace: the index is a
+table, and a cell cannot hold it. The audit reports it rather than trimming it,
+because a trimmed cell would show something the record does not say.
+
 `status.by` names the record that caused the current state, not one entry
 per state the record has ever been in. A record can change state more than
 once — amended, then deprecated — and the field holds the latest cause.

@@ -540,6 +540,17 @@ def check_record(record: Record, corpus: Corpus) -> list[Finding]:
                     f"summary is {len(record.summary)} characters; limit {SUMMARY_MAX}",
                 )
             )
+    for name, value in (("title", record.title), ("summary", record.summary)):
+        if value and value != value.strip():
+            out.append(
+                Finding(
+                    "error",
+                    where,
+                    f"{name!r} has leading or trailing whitespace; the index is a "
+                    "table and cannot carry it — trim the value",
+                )
+            )
+
     if record.date:
         try:
             datetime.date.fromisoformat(record.date)
@@ -889,7 +900,9 @@ def _sort_key(record: Record):
 
 
 def _row(record: Record, with_state: bool = True) -> str:
-    target = record.rel.as_posix()
+    # A pipe in a path would split the cell. Legacy filenames are exempt from
+    # the slug grammar, so this is reachable; `_cells` already unescapes it.
+    target = record.rel.as_posix().replace("|", "\\|")
     link = f"[{record.id or '?'}]({target})"
     title = str(record.title).replace("|", "\\|")
     summary = str(record.summary).replace("|", "\\|")
@@ -1020,8 +1033,14 @@ def parse_index(text: str, where: str = INDEX_NAME) -> tuple[list[IndexRow], lis
     rows: list[IndexRow] = []
     findings: list[Finding] = []
     section = ""
+    # Report lines as a reader would find them in the file: the generated
+    # section starts after the marker, so every offset is relative to it.
+    marker_line = text[: text.index(INDEX_MARKER)].count("\n") + 1
     body = text.split(INDEX_MARKER, 1)[1]
-    for lineno, line in enumerate(body.splitlines(), start=1):
+    for offset, line in enumerate(body.splitlines(), start=1):
+        # The slice starts mid-line, at the marker itself, so offset 1 is the
+        # marker's own line.
+        lineno = marker_line + offset - 1
         stripped = line.strip()
         if not stripped or stripped == "No records yet.":
             continue
