@@ -408,7 +408,7 @@ python3 scripts/drs.py check --strict  # fail on tolerated findings too
   `status.by`, but nothing replaces them, so their edges have no mirror;
 - every required heading is present, `## Promotion` is present on every
   `Draft`, and its presence is accepted in any other state;
-- relative links resolve;
+- the relative links written *inside* each record's body resolve;
 - the index is current and complete;
 - near-duplicate titles among live records are flagged for a human.
 
@@ -429,6 +429,13 @@ anatomy* — a variant is a finding, not a false positive. Anything subtler
 — is this section substantive? does this Draft name criteria reality could
 test? — is out of scope, because a check that guesses is a check that
 lies.
+
+It also cannot see references *into* a record. The link check reads each
+record's outbound links and nothing else, so a spec, an instruction file, a
+code comment, or an inventory can be pointing at a path that no longer exists
+while the audit stays green. That asymmetry is why renaming a record is a
+repository-wide change and not a tidy-up: nothing here will tell you what you
+broke.
 
 It cannot verify the things that matter most: whether the reasoning is
 honest, whether an amendment was really compatible, whether the
@@ -515,7 +522,11 @@ When a repository does need its whole set migrated, retrofit **in place**:
    again.
 3. **Allow filename/id mismatches for legacy files.** Renaming them
    breaks inbound links from specs, code comments, and instructions that
-   are often immutable by convention. The index bridges id to path.
+   are often immutable by convention — and `check` will not tell you, because
+   it follows links out of records rather than into them. Keep the paths; the
+   index is what bridges id to path. If a rename is genuinely wanted, grep the
+   repository for the old path first, then treat it as a separate change with
+   its own review.
 4. **Record the adoption in one record**, carrying `legacy_bodies`: the
    ids of the records whose bodies predate this section format, with a
    reason per entry in its prose. Enumerated, not a blanket exemption — a
