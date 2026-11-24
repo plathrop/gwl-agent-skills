@@ -84,6 +84,11 @@ Do not write one when:
 - "Do nothing" is the only alternative. Then ask whether it is actually a
   decision, or just what everyone was going to do anyway.
 
+Reconstructing a decision that was made and never recorded is also in scope,
+when the rationale still exists somewhere — an archived change, a review, a
+tracked discussion — and something now depends on it being stated. The record is
+the evidence's home, not a new argument.
+
 **No record is a legitimate outcome.** A repository with a handful of
 records covering the choices that really did bind is healthier than one
 with a record per week that nobody reads, and a thin record set is not a
@@ -129,10 +134,21 @@ the fix is the canonical heading rather than a looser matcher.
 
 The front matter is a deliberately small dialect, so that it can be
 checked mechanically: a block mapping of scalar fields, at most one nested
-mapping (`status`), and flow sequences of quoted scalars
-(`["a", "b"]`). Multiline strings, anchors, and nested structures beyond
-`status` are outside the dialect; `scripts/drs.py check` rejects them and
+mapping (`status`), and sequences of scalars. A sequence may be written as a
+flow list (`["a", "b"]`) or a block list (`- "a"` lines), and a flow list may
+be **wrapped across lines with a trailing comma** — those are the shapes YAML
+formatters emit, and rejecting any of them would make "formatted" and "valid"
+incompatible. Multiline strings, anchors, tags, and nested mappings beyond
+`status` stay outside the dialect; `scripts/drs.py check` rejects them and
 names the line. Keep titles and summaries on one line.
+
+**Never suppress the formatter to make a record pass.** No `dprint-ignore-file`
+marker, no exclusion in the formatter's config, no "turn it off for this file".
+A record that a repository's formatter would rewrite is a record the tool must
+accept, and a suppression directive exempts the most important record in an
+adoption while hiding the incompatibility instead of reporting it. If
+formatting and validity disagree, the tool is wrong — report it rather than
+routing around it, exactly as with a record body.
 
 ```yaml
 ---
@@ -382,6 +398,13 @@ neither is a reason to proceed quietly.
 
 The skill bundles one script, `scripts/drs.py` (Python 3.11+, standard
 library only), which operates on `<repo>/docs/decisions/` by default.
+
+The canonical tool is the one in the installed skill — invoke it by path from
+inside the repository being edited, and do not vendor a copy: a repo-local fork
+is a second implementation that has to be maintained deliberately, and an
+unversioned one is worse than no tool. If provenance matters, record the tool's
+identity in the adopting record's References; `drs.py --version` prints a hash
+of the script, which is the closest thing a skill has to a release number.
 Pass `--dir` for a different location. It reads every `.md` file under
 that directory, recursively, and always skips the generated index —
 `README.md` in that directory is a view of the records, never one of them.
@@ -510,7 +533,11 @@ Adoption is forward-only by default: new records follow the format, and
 existing ones are left alone until someone touches them. `check` reports
 unmanaged files as warnings rather than errors for this reason.
 
-When a repository does need its whole set migrated, retrofit **in place**:
+When a repository does need its whole set migrated, retrofit **in place**.
+Do it **before** scaffolding any new record: `drs.py new` allocates the next id
+from *managed* records only, so on an all-legacy corpus it will hand out
+`DR-0001` to a record written today, and the retrofit then has to renumber
+around it. `new` warns when it sees unmanaged files for this reason.
 
 1. **Add front matter to the existing files; change no body.** Mint ids in
    chronological order, write the `summary` line, set `state` from what
@@ -549,6 +576,31 @@ is never a record and is always skipped. Adoption exemptions are the other
 exception; see *Tooling*. Neither mode asks
 anyone to rewrite a legacy body, because a check that can only pass by
 falsifying history is a check people switch off.
+
+### When the successor was never a record
+
+A legacy record may name its replacement in prose — a change, a pull request, a
+commit — because the decision was made and implemented without a record. Then
+`status.by` has no record to name, and the three easy answers are all wrong:
+naming the adoption record claims adoption caused the reversal, leaving the old
+state claims the reversal never happened, and inventing no successor leaves a
+reader with a dangling pointer.
+
+**Write the missing record.** It states what was decided, keeps the original
+decision date (the date the decision was made, not the date it was written
+down), carries the old position in its Alternatives, and cites the evidence —
+the archived change, its design, the review that approved it, the tracked work.
+
+This is **not** the copy-forward this section forbids. Copy-forward fabricates a
+supersession for a decision that did not change; reconstruction documents a
+decision that did change and was never written down. The distinction is
+evidence: an archived change plus the review that accepted it, not an inference
+from the code. If that evidence does not exist, the decision belongs to
+whichever record *does* explain it, or to none.
+
+It is also the one legitimate exception to *do not write a record for a decision
+you have already implemented*: the implementation is not the reason for the
+record, the missing rationale is.
 
 Do not copy decisions forward into new files and supersede the originals.
 The decision did not change, so the supersession would be false, and the

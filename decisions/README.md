@@ -126,6 +126,16 @@ both cheaply: pipes in a legacy filename are escaped in the link target, and a
 title or summary with surrounding whitespace is rejected at the record
 boundary, because a table cell can carry neither.
 
+**The dialect accepts formatter output, not just hand-written input.** The
+first full adoption found this the hard way: a record with seventeen
+`legacy_bodies` ids gets its list wrapped by any YAML formatter, and a dialect
+that accepted only a single-line flow sequence turned one formatting pass into
+seventy errors — with the tempting "fix" being a `dprint-ignore-file` marker on
+the most important record in the repository. Sequences are now accepted in every
+shape a formatter emits: flow, wrapped flow with a trailing comma, and block.
+The rule that came with it is in `SKILL.md`: never suppress the formatter to make
+a record pass.
+
 **Standard library only, and no YAML parser.** A skill is adopted by copying a
 directory into an agent's skill tree, so a dependency the host must install
 makes the tool unusable in exactly the environments the skill exists to serve —
