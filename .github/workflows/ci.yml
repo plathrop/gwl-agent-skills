@@ -17,6 +17,9 @@ jobs:
       # CI rather than two that can drift.
       - uses: jdx/mise-action@v2
       - run: dprint check
+      # The formatter and the tool against each other, which no unit test can
+      # do: generate a corpus, format it, then require the audit to pass.
+      - run: bash decisions/tests/roundtrip.sh
 
   test:
     runs-on: ubuntu-latest

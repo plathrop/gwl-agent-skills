@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import hashlib
 import re
 import subprocess
 import sys
@@ -180,7 +181,11 @@ def parse_scalar(raw: str, where: str):
     if raw[0] == "[":
         if not raw.endswith("]"):
             raise FrontMatterError(f"{where}: unterminated flow sequence")
-        return [parse_scalar(item, where) for item in _split_flow(raw[1:-1], where)]
+        items = _split_flow(raw[1:-1], where)
+        # YAML allows a trailing comma; the empty tail it yields is not an item.
+        while items and not items[-1]:
+            items.pop()
+        return [parse_scalar(item, where) for item in items]
     if raw[0] == "{":
         raise FrontMatterError(
             f"{where}: inline mappings are outside the dialect; use a block mapping"
@@ -193,22 +198,98 @@ def parse_scalar(raw: str, where: str):
     return raw
 
 
+def _scan_flow(text: str) -> bool:
+    """True when a flow sequence starting at `text[0] == "["` is closed.
+
+    Quote- and escape-aware, because `]` inside a quoted item is data. Used to
+    decide whether a sequence ends on the line it starts on; formatters wrap
+    long ones, and a dialect that only accepts one line would make "formatted"
+    and "valid" incompatible.
+    """
+    depth = 0
+    quote = None
+    escaped = False
+    for ch in text:
+        if escaped:
+            escaped = False
+            continue
+        if ch == "\\" and quote == '"':
+            escaped = True
+            continue
+        if quote:
+            if ch == quote:
+                quote = None
+            continue
+        if ch in ('"', "'"):
+            quote = ch
+        elif ch == "[":
+            depth += 1
+        elif ch == "]":
+            depth -= 1
+            if depth == 0:
+                return True
+    return False
+
+
+def _collect_flow(first: str, lines: list[str], index: int, where: str) -> tuple[str, int]:
+    """Gather a possibly-wrapped flow sequence; returns its text and next index."""
+    collected = first
+    while not _scan_flow(collected):
+        index += 1
+        if index >= len(lines):
+            raise FrontMatterError(f"{where}: unterminated flow sequence")
+        collected += "\n" + lines[index]
+    return collected, index
+
+
+def _collect_block_sequence(
+    lines: list[str], index: int, where: str
+) -> tuple[list[str], int]:
+    """Gather `- item` lines under a key; returns the items and next index."""
+    items: list[str] = []
+    while index + 1 < len(lines):
+        following = lines[index + 1]
+        stripped = following.strip()
+        if not stripped.startswith("-"):
+            break
+        index += 1
+        item = stripped[1:].strip()
+        item_where = f"{where.rsplit(':', 1)[0]}:{index + 2}"
+        if not item:
+            raise FrontMatterError(f"{item_where}: empty sequence item")
+        if re.match(r"[A-Za-z_][\w-]*:\s", item):
+            raise FrontMatterError(
+                f"{item_where}: sequence items must be scalars, not mappings"
+            )
+        items.append(parse_scalar(item, item_where))
+    return items, index
+
+
 def parse_front_matter(lines: list[str], path: Path) -> dict:
-    """Parse the restricted dialect: scalars, one nested mapping, flow lists.
+    """Parse the restricted dialect: scalars, one nested mapping, sequences.
 
     >>> parse_front_matter(['id: "DR-0001"', "status:", '  state: "Draft"'], Path("x.md"))
     {'id': 'DR-0001', 'status': {'state': 'Draft'}}
 
+    A sequence may be written as a flow list (`["a", "b"]`) or a block list
+    (`- "a"` lines), and a flow list may be wrapped across lines with a trailing
+    comma — those are the two shapes YAML formatters emit, and a dialect that
+    accepted only the first would fail on any record a formatter had touched.
+    Multiline strings, anchors, tags, and nested mappings beyond `status` stay
+    out of the dialect.
+
     `lines` excludes the fences; `path` is used only to build error locations.
     """
     data: dict = {}
-    nested_key = None
-    for offset, line in enumerate(lines):
-        where = f"{path}:{offset + 2}"
+    nested_key: str | None = None
+    index = -1
+    while index + 1 < len(lines):
+        index += 1
+        line = lines[index]
+        where = f"{path}:{index + 2}"
         if not line.strip() or line.lstrip().startswith("#"):
             continue
-        indented = line[0] in " \t"
-        if indented:
+        if line[0] in " \t":
             if nested_key is None:
                 raise FrontMatterError(
                     f"{where}: indented line outside a mapping; only a value of "
@@ -222,6 +303,7 @@ def parse_front_matter(lines: list[str], path: Path) -> dict:
                 raise FrontMatterError(f"{where}: duplicate key {key!r} in {nested_key}")
             data[nested_key][key] = parse_scalar(raw, where)
             continue
+
         key, sep, raw = line.partition(":")
         if not sep:
             raise FrontMatterError(f"{where}: expected `key: value`")
@@ -230,15 +312,27 @@ def parse_front_matter(lines: list[str], path: Path) -> dict:
             raise FrontMatterError(f"{where}: empty key")
         if key in data:
             raise FrontMatterError(f"{where}: duplicate key {key!r}")
-        if not raw.strip():
-            if key != "status":
-                raise FrontMatterError(
-                    f"{where}: {key!r} needs a value; only `status` may be a mapping"
-                )
-            data[key] = {}
-            nested_key = key
+
+        value = raw.strip()
+        if not value:
+            if key == "status":
+                data[key] = {}
+                nested_key = key
+                continue
+            if index + 1 < len(lines) and lines[index + 1].strip().startswith("-"):
+                items, index = _collect_block_sequence(lines, index, where)
+                data[key] = items
+                nested_key = None
+                continue
+            raise FrontMatterError(
+                f"{where}: {key!r} needs a value; only `status` may be a nested mapping"
+            )
+        if value.startswith("["):
+            collected, index = _collect_flow(value, lines, index, where)
+            data[key] = parse_scalar(collected, where)
+            nested_key = None
             continue
-        data[key] = parse_scalar(raw, where)
+        data[key] = parse_scalar(value, where)
         nested_key = None
     return data
 
@@ -1163,6 +1257,15 @@ def cmd_new(args: argparse.Namespace) -> int:
     if not assets.exists():
         raise DrsError(f"template not found at {assets}")
     corpus = load(directory) if directory.is_dir() else Corpus(directory=directory)
+    unmanaged = [f for f in corpus.findings if f.kind == "unmanaged"]
+    if unmanaged:
+        print(
+            f"drs: warning: {len(unmanaged)} file(s) here have no front matter, so ids "
+            "are allocated without them. Retrofit their front matter first if they are "
+            "meant to keep their chronological ids -- otherwise a later retrofit can "
+            "land on an id this one takes.",
+            file=sys.stderr,
+        )
     numbers = [int(ID_RE.match(r.id).group(1)) for r in corpus.records if ID_RE.match(r.id)]
     number = (max(numbers) + 1) if numbers else 1
     issue_id = canonicalize_id(number)
@@ -1257,8 +1360,15 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 1 if errors else 0
 
 
+def _version() -> str:
+    """The tool's identity: a content hash, because a skill has no release."""
+    digest = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    return f"drs.py {digest[:12]}"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="drs.py", description=__doc__.splitlines()[0])
+    parser.add_argument("--version", action="version", version=_version())
     parser.add_argument("--dir", help="records directory (default: <repo>/docs/decisions)")
     commands = parser.add_subparsers(dest="command", required=True)
 

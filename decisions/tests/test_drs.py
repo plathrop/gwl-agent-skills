@@ -186,6 +186,50 @@ class FrontMatterDialect(CorpusCase):
         with self.assertRaises(drs.FrontMatterError):
             self.parse(["title:"])
 
+    def test_a_wrapped_flow_sequence_parses(self):
+        # This is dprint's output for a long list, including the trailing comma.
+        parsed = self.parse(
+            [
+                "legacy_bodies: [",
+                '  "DR-0001",',
+                '  "DR-0002",',
+                '  "DR-0003",',
+                "]",
+            ]
+        )
+        self.assertEqual(parsed["legacy_bodies"], ["DR-0001", "DR-0002", "DR-0003"])
+
+    def test_a_block_sequence_parses(self):
+        parsed = self.parse(["legacy_bodies:", '  - "DR-0001"', '  - "DR-0002"'])
+        self.assertEqual(parsed["legacy_bodies"], ["DR-0001", "DR-0002"])
+
+    def test_a_bracket_inside_a_wrapped_item_is_data(self):
+        parsed = self.parse(
+            [
+                "legacy_bodies: [",
+                '  "a ] b",',
+                '  "c",',
+                "]",
+            ]
+        )
+        self.assertEqual(parsed["legacy_bodies"], ["a ] b", "c"])
+
+    def test_an_unterminated_wrapped_sequence_names_its_first_line(self):
+        with self.assertRaises(drs.FrontMatterError) as caught:
+            self.parse(["legacy_bodies: [", '  "DR-0001",'])
+        self.assertIn("x.md:2", str(caught.exception))
+        self.assertIn("unterminated flow sequence", str(caught.exception))
+
+    def test_a_block_sequence_item_that_is_a_mapping_is_rejected(self):
+        with self.assertRaises(drs.FrontMatterError) as caught:
+            self.parse(["legacy_bodies:", '  - id: "DR-0001"'])
+        self.assertIn("sequence items must be scalars", str(caught.exception))
+
+    def test_an_empty_sequence_item_is_rejected(self):
+        with self.assertRaises(drs.FrontMatterError) as caught:
+            self.parse(["legacy_bodies:", "  -"])
+        self.assertIn("empty sequence item", str(caught.exception))
+
     def test_unclosed_front_matter_rejected(self):
         with self.assertRaises(drs.FrontMatterError):
             drs.split_document('---\nid: "DR-0001"\nbody\n', Path("x.md"))
@@ -878,6 +922,25 @@ class NewRecord(CorpusCase):
         errors = self.errors()
         self.assertEqual(len(errors), 1, errors)
         self.assertIn("summary is empty", errors[0])
+
+    def test_new_warns_when_legacy_files_have_no_front_matter(self):
+        self.write("2026-09-09-legacy.md", "# A legacy record\n\nNo front matter.\n")
+        err = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            self.new("After the retrofit", author="A Human", reviewer=None)
+        warning = err.getvalue()
+        self.assertIn("1 file(s) here", warning)
+        self.assertIn("no front matter", warning)
+        self.assertIn("retrofit", warning)
+        # It still allocates: forward-only adoption is legitimate.
+        self.assertTrue((self.dir / "0001-after-the-retrofit.md").exists())
+
+    def test_new_is_quiet_on_a_fully_managed_corpus(self):
+        self.record(1, front_matter() + BODY, slug="a")
+        err = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            self.new("Second", author="A Human", reviewer=None)
+        self.assertEqual("", err.getvalue())
 
     def test_reviewers_are_repeatable(self):
         self.new("Reviewed", author="A Human", reviewer=["One", "Two"])
