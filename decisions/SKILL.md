@@ -126,9 +126,11 @@ discussing them.
 
 `## Promotion` is required on a `Draft` and permitted on any later state: a
 promoted draft keeps the section, because the criteria it names are the
-evidence of what the draft was betting on. `check` compares these lines literally, so a variant —
-`## Promotion:`, a different case, a setext underline — is a finding, and
-the fix is the canonical heading rather than a looser matcher.
+evidence of what the draft was betting on.
+
+`check` compares these lines literally, so a variant — `## Promotion:`, a
+different case, a setext underline — is a finding, and the fix is the canonical
+heading rather than a looser matcher.
 
 ### Front matter
 
@@ -198,15 +200,17 @@ purpose: a repository where nothing gets ratified does not need decision
 records, or at least not these.
 
 **File naming**: `NNNN-slug.md`, where `NNNN` matches `id` and `slug` is a
-short lowercase hyphenated version of the title. Numbers are never reused
-and never reordered, and they record **allocation order, not chronology**: a
-reconstructed decision keeps its original `date` and takes the next free id, so
-the index carries the date for exactly this reason. A mismatch between filename and id is an error, except
-for records listed in an adoption record's `legacy_bodies`, where it is a
-warning: adoption keeps legacy filenames because renaming them breaks
-inbound links from specs and instructions that are often immutable by
-convention. The id in front matter, and the index, are authoritative; see
-*Adopting this in an existing repository*.
+short lowercase hyphenated version of the title. Numbers are never reused and
+never reordered, and they record **allocation order, not chronology**: a
+reconstructed decision keeps its original `date` and takes the next free id,
+which is why the index carries the date.
+
+A mismatch between filename and id is an error, except for records listed in an
+adoption record's `legacy_bodies`, where it is a warning: adoption keeps legacy
+filenames because renaming them breaks inbound links from specs and
+instructions that are often immutable by convention. The id in front matter,
+and the index, are authoritative; see *Adopting this in an existing
+repository*.
 
 ### Context
 
@@ -542,11 +546,11 @@ When a repository does need its whole set migrated, retrofit **in place**.
 Do it **before** scaffolding any new record: `drs.py new` allocates the next id
 from *managed* records only, so on an all-legacy corpus it will hand out
 `DR-0001` to a record written today, and the retrofit then has to renumber
-around it. `new` **refuses** when it sees unmanaged files for this reason, naming the
-count and telling you to retrofit first. `--force` allocates anyway, which is
-what forward-only adoption wants; the blast radius of getting the order wrong is
-corpus-wide renumbering, so it takes a deliberate word rather than a warning
-line.
+around it. `new` **refuses** when it sees unmanaged files for this reason,
+naming the count and telling you to retrofit first. `--force` allocates anyway,
+which is what forward-only adoption wants: the blast radius of getting the order
+wrong is corpus-wide renumbering, so it takes a deliberate word rather than a
+warning line.
 
 1. **Add front matter to the existing files; change no body.** Mint ids in
    chronological order, write the `summary` line, set `state` from what
