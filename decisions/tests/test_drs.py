@@ -557,11 +557,13 @@ class LegacyBodies(CorpusCase):
         self.index()
         self.assertEqual(self.errors(strict=True), [])
 
-    def test_unlisted_legacy_filename_is_an_error_in_both_modes(self):
+    def test_a_dated_legacy_filename_is_described_as_dated(self):
+        # The old message read the year as a record number: "filename numbers
+        # 2026 but id is DR-0001" was true and useless.
         self.write("2026-09-14-some-decision.md", front_matter() + BODY)
         self.index()
-        self.assertIn("filename numbers 2026 but id is DR-0001", self.errors())
-        self.assertIn("filename numbers 2026 but id is DR-0001", self.errors(strict=True))
+        self.assertIn("dated filename; expected NNNN-slug.md", self.errors())
+        self.assertIn("dated filename; expected NNNN-slug.md", self.errors(strict=True))
 
 
 class StrictPolicy(CorpusCase):
@@ -797,10 +799,27 @@ class Index(CorpusCase):
             self.errors(),
         )
 
+    def test_an_old_index_header_is_one_finding_not_a_cascade(self):
+        # An adopter upgrading the tool meets this first; saying "missing" for
+        # all nineteen records on top of it would bury the one thing to do.
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        old = text.replace("| Record | Date | Title | Decision | State |", "| Record | Title | Decision | State |")
+        old = old.replace("| --- | --- | --- | --- | --- |", "| --- | --- | --- | --- |")
+        (self.dir / "README.md").write_text(old, encoding="utf-8")
+        errors = self.errors()
+        self.assertEqual(
+            [
+                "index header has 4 columns; this version writes 5 "
+                "(Record, Date, Title, Decision, State) — run `drs.py index`"
+            ],
+            errors,
+        )
+
     def test_line_numbers_are_file_line_numbers(self):
         self.record(1, front_matter() + BODY)
         text = self.index()
-        junk = "| DR-0001 | no link | Nothing. | Accepted |"
+        junk = "| DR-0001 | 2026-11-24 | no link | Nothing. | Accepted |"
         (self.dir / "README.md").write_text(text + junk + "\n", encoding="utf-8")
         # Find the line the junk row actually sits on, 1-based.
         written = (self.dir / "README.md").read_text(encoding="utf-8").splitlines()
@@ -813,7 +832,8 @@ class Index(CorpusCase):
         self.record(1, front_matter() + BODY)
         text = self.index()
         (self.dir / "README.md").write_text(
-            text + "| DR-0001 | no link | Nothing. | Accepted |\n", encoding="utf-8"
+            text + "| DR-0001 | 2026-11-24 | no link | Nothing. | Accepted |\n",
+            encoding="utf-8",
         )
         self.assertTrue(
             any("index row could not be read" in error for error in self.errors()),
@@ -862,7 +882,7 @@ class Index(CorpusCase):
     def test_a_foreign_row_is_reported(self):
         self.record(1, front_matter() + BODY)
         text = self.index()
-        extra = "| [DR-0009](0009-ghost.md) | Ghost | Nothing. | Accepted |\n"
+        extra = "| [DR-0009](0009-ghost.md) | 2026-11-24 | Ghost | Nothing. | Accepted |\n"
         (self.dir / "README.md").write_text(text + extra, encoding="utf-8")
         self.assertIn("index lists DR-0009, which is not a record", self.errors())
 
@@ -923,17 +943,27 @@ class NewRecord(CorpusCase):
         self.assertEqual(len(errors), 1, errors)
         self.assertIn("summary is empty", errors[0])
 
-    def test_new_warns_when_legacy_files_have_no_front_matter(self):
+    def test_new_refuses_when_legacy_files_have_no_front_matter(self):
+        # Blast radius: allocating over an all-legacy corpus is renumbering for
+        # everyone who retrofits afterwards, so it takes a deliberate override.
+        self.write("2026-09-09-legacy.md", "# A legacy record\n\nNo front matter.\n")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            code = drs.main(
+                ["--dir", str(self.dir), "new", "After the retrofit", "--author", "A Human"]
+            )
+        self.assertEqual(code, 1)
+        self.assertIn("1 file(s) here have no front matter", err.getvalue())
+        self.assertIn("--force", err.getvalue())
+        self.assertFalse((self.dir / "0001-after-the-retrofit.md").exists())
+
+    def test_force_allocates_over_an_unmanaged_corpus(self):
         self.write("2026-09-09-legacy.md", "# A legacy record\n\nNo front matter.\n")
         err = io.StringIO()
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
-            self.new("After the retrofit", author="A Human", reviewer=None)
-        warning = err.getvalue()
-        self.assertIn("1 file(s) here", warning)
-        self.assertIn("no front matter", warning)
-        self.assertIn("retrofit", warning)
-        # It still allocates: forward-only adoption is legitimate.
-        self.assertTrue((self.dir / "0001-after-the-retrofit.md").exists())
+            self.new("Forward only", author="A Human", reviewer=None, force=True)
+        self.assertIn("no front matter", err.getvalue())
+        self.assertTrue((self.dir / "0001-forward-only.md").exists())
 
     def test_new_is_quiet_on_a_fully_managed_corpus(self):
         self.record(1, front_matter() + BODY, slug="a")
