@@ -113,6 +113,16 @@ tables back and compares what each row *says* — the record exists, the decisio
 matches, the state is current, the link resolves — so a formatted index is
 still a valid one, and a genuinely stale row still fails with the field named.
 
+That fix had a second lesson in it, found by review of the fix rather than by
+use. The content comparison folded the page into a dictionary of cells, and a
+dictionary cannot hold what a reader sees *outside* a cell: which section a row
+sits under, whether the record appears twice, or whether the file is even the
+generator's. All three are content, all three became invisible, and the shape of
+the bug was the same each time — a parse that describes the cells instead of the
+document. The check now returns rows in file order with their section, refuses
+to guess at a markerless file, and reports any text below the marker that the
+next regeneration would delete.
+
 **Standard library only, and no YAML parser.** A skill is adopted by copying a
 directory into an agent's skill tree, so a dependency the host must install
 makes the tool unusable in exactly the environments the skill exists to serve —
