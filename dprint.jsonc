@@ -9,6 +9,9 @@
   },
   "yaml": {
   },
+  // decisions/assets/template.md is tooling input, not prose: this formatter
+  // rewrites its [{{placeholder}}] substitutions into [{ { placeholder } }],
+  // which silently stops drs.py new from substituting anything.
   "excludes": [
     "**/*-lock.json",
     ".pebble/**",

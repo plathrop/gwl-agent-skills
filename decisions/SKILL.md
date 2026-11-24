@@ -386,7 +386,7 @@ that directory, recursively, and always skips the generated index —
 python3 scripts/drs.py new "<title>"   # scaffold the next record from assets/template.md
 python3 scripts/drs.py index           # regenerate docs/decisions/README.md
 python3 scripts/drs.py check           # audit the set; exit 1 on errors
-python3 scripts/drs.py check --strict  # require every file to be a managed record
+python3 scripts/drs.py check --strict  # fail on tolerated findings too
 ```
 
 `check` verifies what can be verified mechanically:
@@ -394,7 +394,8 @@ python3 scripts/drs.py check --strict  # require every file to be a managed reco
 - front matter parses; ids are unique and well-formed; states are in the
   vocabulary;
 - every `status.by` resolves to an existing record, and is present exactly
-  when the state requires it;
+  when the state requires it — one set on an `Accepted` or `Draft` record is
+  reported as junk metadata, which `--strict` turns into an error;
 - each id in a record's `supersedes` resolves to a record in `Superseded`
   state whose `status.by` names that record — and every `Superseded`
   record is listed in the `supersedes` of the record naming it. The
@@ -406,6 +407,15 @@ python3 scripts/drs.py check --strict  # require every file to be a managed reco
 - relative links resolve;
 - the index is current and complete;
 - near-duplicate titles among live records are flagged for a human.
+
+`--strict` promotes tolerated findings to errors — unmanaged files and junk
+metadata — and deliberately leaves two alone. A `legacy` finding (a heading or
+filename demoted by `legacy_bodies`) stays a warning forever, because the only
+way to silence it would be to rewrite a body the protocol forbids rewriting. A
+`judgement` finding (the duplicate-title heuristic) stays a warning too: a guess
+about whether two decisions are the same is not something a build should fail
+on. So `--strict` means "this corpus is clean", except where clean is either
+impossible or not mechanical.
 
 The heading checks compare whole lines as exact strings. That is
 deliberate: they can report a missing section and cannot report a content
@@ -491,9 +501,10 @@ several records carry the field, their lists union.
 
 Files with no front matter cannot be listed at all. They are *unmanaged*,
 which is its own finding: a warning by default, since forward-only
-adoption leaves them alone, and an error under `--strict`, which means
-"every file under this directory is a record" — with one exclusion, the
-generated index, which is never a record and is always skipped. Neither mode asks
+adoption leaves them alone, and an error under `--strict`, which promotes
+tolerated findings generally — with one exclusion, the generated index, which
+is never a record and is always skipped. Adoption exemptions are the other
+exception; see *Tooling*. Neither mode asks
 anyone to rewrite a legacy body, because a check that can only pass by
 falsifying history is a check people switch off.
 

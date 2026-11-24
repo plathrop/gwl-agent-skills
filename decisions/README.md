@@ -22,26 +22,24 @@ somebody ratifies, in repositories that have reviews.
 | [`references/writing.md`](references/writing.md) | Depth for drafting: worked good/bad examples per section, how to write a summary line and a rubric record, how to write an amendment justification.           |
 | [`assets/template.md`](assets/template.md)       | What `drs.py new` copies.                                                                                                                                     |
 | [`scripts/drs.py`](scripts/drs.py)               | `new`, `index`, `check`. Python 3.11+, standard library only.                                                                                                 |
-| [`tests/test_drs.py`](tests/test_drs.py)         | 62 tests, stdlib `unittest`.                                                                                                                                  |
+| [`tests/test_drs.py`](tests/test_drs.py)         | 78 tests, stdlib `unittest`.                                                                                                                                  |
 
 ## Setup
 
-Nothing to install: run the script from wherever the skill lives.
+Nothing to install. Run the commands **inside the repository whose records you
+are touching**, pointing at the script where the skill lives — the records
+directory is discovered from the working directory, not from the script:
 
 ```bash
-python3 <skill-dir>/scripts/drs.py --dir docs/decisions new "Publish writes durably"
-python3 <skill-dir>/scripts/drs.py index
-python3 <skill-dir>/scripts/drs.py check
+cd /path/to/your/repo
+python3 /path/to/decisions/scripts/drs.py new "Publish writes durably"
+python3 /path/to/decisions/scripts/drs.py index
+python3 /path/to/decisions/scripts/drs.py check
 ```
 
-`--dir` may go before or after the subcommand. Default is
-`<repo root>/docs/decisions`, found by walking up from the current directory
-to the nearest `.git`.
-
-`assets/template.md` is excluded from `dprint` in the repo's `dprint.json`: its
-`{{placeholder}}` substitutions are rewritten by the markdown formatter
-(`[{{authors}}]` becomes `[{ { authors } }]`, and the scaffold silently stops
-substituting). It is tooling input, not prose.
+The default records directory is `<repo root>/docs/decisions`, found by walking
+up from the current directory to the nearest `.git`; `--dir` overrides it and
+may go before or after the subcommand.
 
 `new` reads the author from `git config user.name` unless you pass `--author`;
 reviewers are passed with repeated `--reviewer` flags, because a scaffold
@@ -103,6 +101,15 @@ amendment sections, which makes the current decision a fold over sections with
 no merge discipline. Git already holds that history; the `status.by` pointer
 names the record that justifies the current state.
 
+**Standard library only, and no YAML parser.** A skill is adopted by copying a
+directory into an agent's skill tree, so a dependency the host must install
+makes the tool unusable in exactly the environments the skill exists to serve —
+that is the same "zero configuration" argument the record format's own
+predecessors made for repo-local tools. The cost is a hand-written parser for a
+small dialect, which turns out to be a benefit: the format is small *because* it
+is checkable, and anything outside it is rejected by line number rather than
+silently misread.
+
 **Adoption by retrofit, never by copying.** "Create a new record per still-live
 decision and supersede the old one" is the tempting migration, and it is wrong
 twice: the decision did not change, so the supersession edge is a lie in the
@@ -130,7 +137,10 @@ many words, and it should stay that way.
 Forward-only by default: new records follow the format, and existing ones are
 left alone until someone touches them. Unmanaged files — `.md` files in the
 records directory with no front matter — are warnings, and errors under
-`--strict`, which means "every file under this directory is a record".
+`--strict`, which promotes tolerated findings to errors (unmanaged files, junk
+metadata) and leaves adoption exemptions and duplicate-title warnings alone,
+because those cannot be fixed mechanically and in the first case must not be
+fixed at all.
 
 For a full migration, retrofit in place: add front matter, keep the bodies,
 keep the original decision dates, mint ids in chronological order, and record
