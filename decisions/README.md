@@ -101,6 +101,18 @@ amendment sections, which makes the current decision a fold over sections with
 no merge discipline. Git already holds that history; the `status.by` pointer
 names the record that justifies the current state.
 
+**The index is checked by content, not by bytes.** The first real corpus found
+this before it had a record in it. A byte-identical comparison looks like the
+strictest possible staleness check and is actually unworkable: `drs.py index`
+writes plain tables, the repository's formatter aligns them, and the two then
+fail each other in a loop — regenerate and the formatter complains, format and
+the audit reports a stale index. Whichever runs last is "wrong". The contract
+was the bug: a generated file that must also be pleasant for a human to read
+cannot be byte-identical to its generator's output. `check` now reads the
+tables back and compares what each row *says* — the record exists, the decision
+matches, the state is current, the link resolves — so a formatted index is
+still a valid one, and a genuinely stale row still fails with the field named.
+
 **Standard library only, and no YAML parser.** A skill is adopted by copying a
 directory into an agent's skill tree, so a dependency the host must install
 makes the tool unusable in exactly the environments the skill exists to serve —

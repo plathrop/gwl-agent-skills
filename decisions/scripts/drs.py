@@ -940,15 +940,93 @@ def existing_preamble(directory: Path) -> str:
     return text.rstrip() + "\n"
 
 
+def _cells(line: str) -> list[str]:
+    """Split one table row into stripped cells, respecting escaped pipes."""
+    cells, buf, i = [], [], 0
+    while i < len(line):
+        ch = line[i]
+        if ch == "\\" and i + 1 < len(line) and line[i + 1] == "|":
+            buf.append("|")
+            i += 2
+            continue
+        if ch == "|":
+            cells.append("".join(buf).strip())
+            buf = []
+            i += 1
+            continue
+        buf.append(ch)
+        i += 1
+    cells.append("".join(buf).strip())
+    # A well-formed row starts and ends with a pipe, which yields empty edges.
+    return cells[1:-1] if len(cells) > 1 and not cells[0] and not cells[-1] else cells
+
+
+def parse_index_rows(text: str) -> dict[str, tuple[str, str, str, str]]:
+    """Read the index's tables back into {id: (link, title, summary, state)}.
+
+    The index is a document a human reads, so a formatter may pad its cells,
+    align its separators, or reflow the preamble above it. The audit therefore
+    compares *content* -- which records a reader would find there, with which
+    decision and state -- rather than bytes. Byte equality would make the
+    generator and any formatter permanently wrong about each other.
+    """
+    rows: dict[str, tuple[str, str, str, str]] = {}
+    body = text.split(INDEX_MARKER, 1)[1] if INDEX_MARKER in text else text
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cells = _cells(stripped)
+        if len(cells) < 3 or set(cells[0]) <= {"-", ":"}:
+            continue  # separator row
+        match = re.match(r"\[([^\]]+)\]\(([^)]+)\)", cells[0])
+        if not match:
+            continue
+        issue_id = match.group(1).strip()
+        state = cells[3] if len(cells) > 3 else ""
+        rows[issue_id] = (match.group(2).strip(), cells[1], cells[2], state)
+    return rows
+
+
 def check_index(corpus: Corpus) -> list[Finding]:
+    """Compare what the index says about each record, not how it is laid out."""
     path = corpus.directory / INDEX_NAME
-    expected = render_index(corpus, existing_preamble(corpus.directory))
     if not path.exists():
         return [Finding("error", INDEX_NAME, "index is missing; run `drs.py index`")]
-    actual = path.read_text(encoding="utf-8")
-    if actual != expected:
-        return [Finding("error", INDEX_NAME, "index is stale; run `drs.py index`")]
-    return []
+    listed = parse_index_rows(path.read_text(encoding="utf-8"))
+    expected = {
+        record.id: (record.rel.as_posix(), record.title, record.summary, record.state)
+        for record in corpus.records
+        if record.id
+    }
+    out: list[Finding] = []
+    for issue_id in sorted(set(expected) - set(listed)):
+        out.append(
+            Finding("error", INDEX_NAME, f"index is missing {issue_id}; run `drs.py index`")
+        )
+    for issue_id in sorted(set(listed) - set(expected)):
+        out.append(
+            Finding("error", INDEX_NAME, f"index lists {issue_id}, which is not a record")
+        )
+    for issue_id in sorted(set(listed) & set(expected)):
+        link, title, summary, state = listed[issue_id]
+        fields = (("link", link), ("title", title), ("summary", summary), ("state", state))
+        want = expected[issue_id]
+        wrong = [
+            name
+            for (name, got), wanted in zip(fields, want)
+            if got != wanted
+        ]
+        if wrong:
+            out.append(
+                Finding(
+                    "error",
+                    INDEX_NAME,
+                    f"index is out of date for {issue_id}: {', '.join(wrong)} "
+                    "differs; run `drs.py index`",
+                )
+            )
+    return out
 
 
 # --- Commands --------------------------------------------------------------

@@ -438,6 +438,14 @@ diff, where a reviewer can see the decision in the same place they review
 the reasoning. A stale index is an error, because a stale index is how a
 repository ends up re-deciding something it settled last year.
 
+**The check compares content, not bytes.** The index is a document people
+read, so a formatter may pad its cells, align its separators, and reflow the
+preamble above the generated section — none of that is staleness. What `check`
+verifies is that every record has a row, that no row points at a record which
+does not exist, and that each row's title, decision, state and link still match
+the record it names. Regenerate when the *content* drifts; format however you
+like.
+
 ## Agent obligations
 
 The parts of this discipline that only bind an agent:

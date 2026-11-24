@@ -601,7 +601,72 @@ class Index(CorpusCase):
         self.record(1, front_matter() + BODY)
         self.index()
         self.record(2, front_matter(id="DR-0002", title="Second") + BODY, slug="second")
-        self.assertIn("index is stale; run `drs.py index`", self.errors())
+        self.assertIn("index is missing DR-0002; run `drs.py index`", self.errors())
+
+    def test_a_formatter_padded_index_passes(self):
+        # The index is a document. A formatter may pad its cells and align its
+        # separators; the audit compares content, so that is not staleness.
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        padded = []
+        for line in text.splitlines():
+            if line.startswith("|"):
+                cells = [cell.strip() for cell in line.strip("|").split("|")]
+                if set(cells[0]) <= {"-"}:
+                    line = "| " + " | ".join("---" for _ in cells) + " |"
+                else:
+                    line = "| " + " | ".join(cell.ljust(40) for cell in cells) + " |"
+            padded.append(line)
+        (self.dir / "README.md").write_text("\n".join(padded) + "\n", encoding="utf-8")
+        self.assertEqual(self.errors(), [])
+
+    def test_rows_may_be_reordered(self):
+        self.record(1, front_matter() + BODY, slug="a")
+        self.record(2, front_matter(id="DR-0002", title="Second") + BODY, slug="b")
+        text = self.index()
+        head, _, tail = text.partition("## Live")
+        rows = [line for line in tail.splitlines() if line.startswith("|")]
+        body = [
+            line
+            for line in tail.splitlines()
+            if not line.startswith("|") and line.strip()
+        ]
+        rebuilt = [rows[0], rows[1], rows[3], rows[2]] + body
+        (self.dir / "README.md").write_text(
+            head + "## Live\n\n" + "\n".join(rebuilt) + "\n", encoding="utf-8"
+        )
+        self.assertEqual(self.errors(), [])
+
+    def test_a_wrong_state_in_the_index_is_reported(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        (self.dir / "README.md").write_text(
+            text.replace("| Accepted |", "| Draft |"), encoding="utf-8"
+        )
+        self.assertIn(
+            "index is out of date for DR-0001: state differs; run `drs.py index`", self.errors()
+        )
+
+    def test_a_foreign_row_is_reported(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        extra = "| [DR-0009](0009-ghost.md) | Ghost | Nothing. | Accepted |\n"
+        (self.dir / "README.md").write_text(text + extra, encoding="utf-8")
+        self.assertIn("index lists DR-0009, which is not a record", self.errors())
+
+    def test_the_preamble_is_the_reader_s_to_edit(self):
+        self.record(1, front_matter() + BODY)
+        text = self.index()
+        head, sep, tail = text.partition(drs.INDEX_MARKER)
+        (self.dir / "README.md").write_text(
+            "# Our records\n\nRead DR-0003 first.\n\n" + sep + tail, encoding="utf-8"
+        )
+        self.assertEqual(self.errors(), [])
+
+    def test_a_pipe_in_a_summary_survives_the_round_trip(self):
+        self.record(1, front_matter(summary="A | B") + BODY)
+        self.index()
+        self.assertEqual(self.errors(), [])
 
     def test_missing_index_is_an_error(self):
         self.record(1, front_matter() + BODY)
