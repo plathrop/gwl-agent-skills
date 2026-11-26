@@ -73,6 +73,12 @@ Two rules do most of the work:
 The protocol was mined from three repositories that had each invented a
 decision-record practice, and each of which exposed a different defect.
 
+This section is a dated narrative, kept as written: entries are appended with
+the date the decision was made, and an entry that turns out wrong gets an
+editor's note rather than a rewrite. Entries written before 2026-11-26 carry
+no date — they were recorded as lessons rather than as events, and their dates
+are not recoverable from the text.
+
 **Front matter instead of a status line in the body.** One of the three wrote
 `**Status:** Accepted` in the prose. A record declared superseded by a later
 record still said `Accepted` three weeks later, because nothing forced the
@@ -165,6 +171,30 @@ and leave the bodies alone.
 handle — so the exemption list has a uniform key even where the filenames
 never did. A filename-keyed list would silently un-exempt records the day
 someone renames them.
+
+**No decision records in this repository (2026-11-26).** Two protocol
+questions — whether `Draft` means unratified or unproven, and whether an
+adopter can run the audit in CI when the tool is never vendored — had reached
+the point where their reasoning needed a home, and both were written up asking
+for a decision record, which this repository has nowhere to put. So we
+considered adopting the format this skill defines, and declined.
+
+Two arguments decided it. `SKILL.md` is the artifact an adopter actually
+loads, so a records directory here is invisible to the reader the rationale
+was for; and this repository has no review tradition, so a record's
+`reviewers` field could only ever be satisfied by a maintainer ratifying their
+own decision — which would have meant committing the corpus to one reading of
+`Draft` *before* the `Draft` question was settled. The second is the sharper
+of the two: adopting would have answered one of the open questions by
+accident.
+
+What was rejected is worth naming, because it is a legitimate use of the
+format: a small corpus scoped to protocol decisions that bind adopters — three
+or four records, not a habit — which would have given adopters a citable
+handle for the reasoning instead of a URL pointing into this repository. What
+replaced it is the arrangement `AGENTS.md` now states: rules in `SKILL.md`
+that name their rejected option in a line, the argument here, and the work in
+the tracker.
 
 ## What `check` cannot do
 

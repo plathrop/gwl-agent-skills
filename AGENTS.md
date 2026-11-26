@@ -48,6 +48,25 @@ file: move the explanation to `references/` or `README.md` and leave the
 rule behind. The test is never how long the file is; it is whether the
 agent needs that text in order to act correctly.
 
+### Why a rule is what it is
+
+`SKILL.md` states rules; it does not argue for them. A rule that has a
+defensible alternative names that alternative in one line, at the rule, so
+that a reader who would propose it knows it was considered and can see
+why it lost.
+
+The argument itself belongs in the skill's `README.md`, under *Why these
+choices, with the evidence*. That section is a **dated narrative, kept as
+written**: entries are appended with the date of the decision, and an
+entry that turns out wrong gets an editor's note rather than a rewrite.
+What we believed when we decided is the thing worth preserving.
+
+This repository keeps no decision records. A record is for a corpus that
+is reviewed and ratified, and the artifact that ships from here is the
+skill itself — a records directory would be invisible to the adopter who
+loads `SKILL.md` and to the next session that reads it. The rule, the
+rejected option, and the evidence carry what a record would have.
+
 ## Authoring skills
 
 Skills here are published for anyone: opinionated, but usable as-is by
