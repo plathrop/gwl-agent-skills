@@ -658,12 +658,12 @@ def check_record(record: Record, corpus: Corpus) -> list[Finding]:
         if not record.authors:
             out.append(Finding("error", where, "authors is empty; name who reasoned it out"))
     if "reviewers" in front and isinstance(front["reviewers"], list):
-        if not record.reviewers and record.state != "Draft":
+        if not record.reviewers:
             out.append(
                 Finding(
                     "error",
                     where,
-                    f"{record.state} record has no reviewers; a record nobody ratified is a Draft",
+                    f"{record.state} record has no reviewers; the ratifier adds their name before merge",
                 )
             )
 

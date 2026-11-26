@@ -6,7 +6,7 @@ date: "{{date}}"
 authors: [{{authors}}]
 reviewers: [{{reviewers}}]
 status:
-  state: "Draft"
+  state: "Accepted"
 supersedes: []
 ---
 

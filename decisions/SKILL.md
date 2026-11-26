@@ -128,7 +128,7 @@ discussing them.
 promoted draft keeps the section, because the criteria it names are the
 evidence of what the draft was betting on.
 
-`check` compares these lines literally, so a variant — `## Promotion:`, a
+`check` compares these lines literally, so a variant — `## References:`, a
 different case, a setext underline — is a finding, and the fix is the canonical
 heading rather than a looser matcher.
 
@@ -166,19 +166,19 @@ supersedes: []
 ---
 ```
 
-| Field           | Required                                               | Meaning                                                                                                                                             |
-| --------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`            | always                                                 | `DR-` plus a zero-padded integer. The citable handle.                                                                                               |
-| `title`         | always                                                 | The decision's name, not the question it answers.                                                                                                   |
-| `summary`       | always                                                 | The decision in one sentence, 140 characters or fewer. This is what the index shows.                                                                |
-| `date`          | always                                                 | The date the decision was made — not the date the file was written, copied, or reformatted.                                                         |
-| `authors`       | always                                                 | Who reasoned it out. Name a model by model id when a model drafted it.                                                                              |
-| `reviewers`     | always                                                 | Who ratified it. An agent may author a record; a human ratifies it. Empty only while the record is a `Draft` — a record nobody ratified is a draft. |
-| `status.state`  | always                                                 | `Draft`, `Accepted`, `Amended`, `Deprecated`, or `Superseded`.                                                                                      |
-| `status.by`     | when state is `Amended`, `Deprecated`, or `Superseded` | The id of the record that caused the **current** state.                                                                                             |
-| `status.date`   | optional                                               | When the state changed. Omitted means "same as `date`, or recoverable from git".                                                                    |
-| `supersedes`    | when this record supersedes anything                   | The ids it replaces.                                                                                                                                |
-| `legacy_bodies` | on an adoption record                                  | Ids whose bodies predate this section format. Demotes their heading and filename checks to warnings; changes nothing else.                          |
+| Field           | Required                                               | Meaning                                                                                                                                                                                                                  |
+| --------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`            | always                                                 | `DR-` plus a zero-padded integer. The citable handle.                                                                                                                                                                    |
+| `title`         | always                                                 | The decision's name, not the question it answers.                                                                                                                                                                        |
+| `summary`       | always                                                 | The decision in one sentence, 140 characters or fewer. This is what the index shows.                                                                                                                                     |
+| `date`          | always                                                 | The date the decision was made — not the date the file was written, copied, or reformatted.                                                                                                                              |
+| `authors`       | always                                                 | Who reasoned it out. Name a model by model id when a model drafted it.                                                                                                                                                   |
+| `reviewers`     | always                                                 | Who ratified it. An agent may author a record; a human ratifies it. Never empty on a committed record: a record nobody ratified is not a record yet, so it lives in the pull request and merging it is the ratification. |
+| `status.state`  | always                                                 | `Draft`, `Accepted`, `Amended`, `Deprecated`, or `Superseded`.                                                                                                                                                           |
+| `status.by`     | when state is `Amended`, `Deprecated`, or `Superseded` | The id of the record that caused the **current** state.                                                                                                                                                                  |
+| `status.date`   | optional                                               | When the state changed. Omitted means "same as `date`, or recoverable from git".                                                                                                                                         |
+| `supersedes`    | when this record supersedes anything                   | The ids it replaces.                                                                                                                                                                                                     |
+| `legacy_bodies` | on an adoption record                                  | Ids whose bodies predate this section format. Demotes their heading and filename checks to warnings; changes nothing else.                                                                                               |
 
 Titles and summaries carry no leading or trailing whitespace: the index is a
 table, and a cell cannot hold it. The audit reports it rather than trimming it,
@@ -196,8 +196,27 @@ recording because provenance of *reasoning* is different from provenance
 of code: a record drafted by a model and ratified by a human is a
 different object from one a human wrote, and a later reader deserves to
 know which they are reading. Requiring a reviewer is opinionated on
-purpose: a repository where nothing gets ratified does not need decision
-records, or at least not these.
+purpose: a decision is a record once somebody stands behind it, and until
+then it is a proposal.
+
+**Merging a record is ratifying it.** A record nobody has signed is not a
+record yet: it belongs in the pull request that proposes it, not in the
+corpus. That is what makes the invariant checkable rather than aspirational —
+the corpus holds only records somebody stood behind, and `check` reports an
+empty `reviewers` as an error in every state, `Draft` included.
+
+The field is filled **by the ratifier, in the pull request, before the merge**.
+An author who does not know who will sign leaves it empty and lets `check`
+fail until someone does; that failure is the reminder, not a defect. Naming a
+ratifier who has not agreed writes a claim nobody made, which is the one thing
+this field exists to prevent.
+
+The field claims who signed, not that the review was independent of the
+author. A maintainer may ratify their own record and often does: the protocol
+is opinionated that a decision be attributed, not that a second party exist. A
+one-maintainer repository still benefits from a record of what was decided and
+what was rejected; it just cannot have the record reviewed, and the field
+should not pretend it was.
 
 **File naming**: `NNNN-slug.md`, where `NNNN` matches `id` and `slug` is a
 short lowercase hyphenated version of the title. Numbers are never reused and
@@ -533,8 +552,9 @@ The parts of this discipline that only bind an agent:
   section is worse than a short honest one, because it makes the record
   look like reasoning.
 - **Write the record yourself when the decision is yours**, with `authors`
-  naming you (by model id) and `reviewers` naming who ratified it. Do not
-  leave a decision of yours unrecorded because a human did not write it.
+  naming you (by model id). Leave `reviewers` to the ratifier: name them
+  yourself and you have written a claim nobody made. Do not leave a decision
+  of yours unrecorded because a human did not write it.
 
 ## Adopting this in an existing repository
 

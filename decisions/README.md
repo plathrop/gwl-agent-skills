@@ -12,7 +12,8 @@ knowing what was decided and why.
 
 This skill encodes a lifecycle and a format that are checkable, plus the
 tooling to check them. It is opinionated on purpose: records are for decisions
-somebody ratifies, in repositories that have reviews.
+somebody ratifies, and one signature is enough — a one-maintainer repository
+ratifies with its own.
 
 ## What is here
 
@@ -44,6 +45,11 @@ may go before or after the subcommand.
 `new` reads the author from `git config user.name` unless you pass `--author`;
 reviewers are passed with repeated `--reviewer` flags, because a scaffold
 cannot know who will ratify it.
+
+A fresh scaffold reports exactly two errors — an empty `summary` and an empty
+`reviewers` — and that is the design, not a broken scaffold. Both are things
+the scaffold cannot know: the summary is the author's judgement, and the
+ratifier's name belongs to the ratifier, who adds it in the pull request.
 
 Run the tests with:
 
@@ -195,6 +201,29 @@ handle for the reasoning instead of a URL pointing into this repository. What
 replaced it is the arrangement `AGENTS.md` now states: rules in `SKILL.md`
 that name their rejected option in a line, the argument here, and the work in
 the tracker.
+
+**`Draft` means ratified-but-unproven, and nobody signs it for you
+(2026-11-26).** The state was defined twice — the lifecycle table read it as a
+decision reality had not tested yet, the front-matter table as one nobody had
+ratified — so every draft had to satisfy both at once, which is
+unsatisfiable: a record awaiting review cannot name observable criteria about
+how reality will behave. Three adopters resolved it three ways locally, and
+the only Drafts that ever existed were bootstrap artifacts that should not
+have landed. One reading now stands: `Draft` is ratified and unproven;
+`reviewers` is required on every committed record; an unratified record lives
+in the pull request, so merging it is the ratification.
+
+What was rejected: a second state, `Provisional`, for the
+ratified-but-unproven case, which would have kept both readings true. It loses
+on evidence — no adopter has ever used the state it would add — and on its one
+advantage: the only thing it buys is that the corpus may hold a record nobody
+ratified, which is the thing the protocol is trying to keep out.
+
+The second half of the decision is that `reviewers` records **who signed, not
+that review happened**. A maintainer may ratify their own record. The earlier
+position here was that a repository where nothing gets ratified does not need
+records; the correction is that a solo repository ratifies with one signature,
+which is a weaker claim but a true one, and worth having on the record.
 
 ## What `check` cannot do
 

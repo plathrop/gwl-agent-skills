@@ -306,10 +306,26 @@ class RecordShape(CorpusCase):
 
     def test_unratified_accepted_record_is_an_error(self):
         self.record(1, front_matter(reviewers="[]") + BODY)
-        self.assertIn("Accepted record has no reviewers; a record nobody ratified is a Draft", self.errors())
+        self.assertIn(
+            "Accepted record has no reviewers; the ratifier adds their name before merge",
+            self.errors(),
+        )
 
-    def test_unratified_draft_is_fine(self):
+    def test_unratified_draft_is_also_an_error(self):
+        # Merging a record is ratifying it, so an unratified record is never in
+        # the corpus — it belongs in the pull request that proposes it. `Draft`
+        # means ratified-but-unproven, not unsigned.
         self.record(1, front_matter(reviewers="[]", state="Draft") + DRAFT_BODY)
+        self.index()
+        self.assertIn(
+            "Draft record has no reviewers; the ratifier adds their name before merge",
+            self.errors(),
+        )
+
+    def test_self_ratified_record_is_fine(self):
+        # A maintainer may ratify their own record: the field claims who signed,
+        # not that review was independent of the author.
+        self.record(1, front_matter(authors='["A Human"]', reviewers='["A Human"]') + BODY)
         self.index()
         self.assertEqual(self.errors(), [])
 
@@ -933,15 +949,23 @@ class NewRecord(CorpusCase):
         self.assertIn('id: "DR-0008"', text)
         self.assertIn('date: "', text)
         self.assertIn('authors: ["A Human"]', text)
-        self.assertIn('state: "Draft"', text)
+        # Accepted is the default: both states assert ratification, so the
+        # scaffold defaults to the common case and Draft is a deliberate
+        # choice about a decision reality has not tested yet.
+        self.assertIn('state: "Accepted"', text)
         self.assertIn("## Promotion", text)
 
-    def test_the_scaffold_loads_and_only_lacks_its_summary(self):
+    def test_the_scaffold_loads_and_lacks_only_what_it_cannot_know(self):
+        # A scaffold is deliberately incomplete in exactly two ways: the summary
+        # is the author's judgement and is left empty, and nobody has ratified
+        # the record yet — which is the state the pull request exists for. Both
+        # findings are errors, and both are fixed before the record is merged.
         self.new("Another Thing", author="A Human", reviewer=None)
         self.index()
         errors = self.errors()
-        self.assertEqual(len(errors), 1, errors)
+        self.assertEqual(len(errors), 2, errors)
         self.assertIn("summary is empty", errors[0])
+        self.assertIn("no reviewers; the ratifier adds their name before merge", errors[1])
 
     def test_new_refuses_when_legacy_files_have_no_front_matter(self):
         # Blast radius: allocating over an all-legacy corpus is renumbering for
