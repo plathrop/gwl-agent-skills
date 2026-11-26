@@ -38,7 +38,10 @@ Nothing happens.
 None.
 """
 
-DRAFT_BODY = BODY.replace(
+# A body carrying a `## Promotion` section, which the format no longer has.
+# Records written before the section was removed keep theirs, and the audit
+# must tolerate it: an extra heading is not a finding.
+LEFT_OVER_PROMOTION_BODY = BODY.replace(
     "## References", "## Promotion\n\nCriteria.\n\n## References"
 )
 
@@ -315,7 +318,7 @@ class RecordShape(CorpusCase):
         # Merging a record is ratifying it, so an unratified record is never in
         # the corpus — it belongs in the pull request that proposes it. `Draft`
         # means ratified-but-unproven, not unsigned.
-        self.record(1, front_matter(reviewers="[]", state="Draft") + DRAFT_BODY)
+        self.record(1, front_matter(reviewers="[]", state="Draft") + LEFT_OVER_PROMOTION_BODY)
         self.index()
         self.assertIn(
             "Draft record has no reviewers; the ratifier adds their name before merge",
@@ -364,16 +367,22 @@ class Headings(CorpusCase):
         self.record(1, front_matter() + BODY.replace("### Do Nothing", "### Nothing"))
         self.assertIn("missing heading '### Do Nothing'", self.errors())
 
-    def test_draft_needs_promotion(self):
+    def test_draft_needs_no_promotion_section(self):
+        # There is no promotion section: a Draft is justified by its body like
+        # any other record. Requiring one made the tool certify observable
+        # criteria it had never read.
         self.record(1, front_matter(state="Draft") + BODY)
-        self.assertIn("Draft record needs '## Promotion'", self.errors())
-
-    def test_promoted_draft_keeps_its_promotion_heading(self):
-        # A promoted draft keeps ## Promotion as the evidence. That must not
-        # be an error now the record is Accepted.
-        self.record(1, front_matter(state="Accepted") + DRAFT_BODY, slug="b")
         self.index()
         self.assertEqual(self.errors(), [])
+
+    def test_a_left_over_promotion_section_is_not_a_finding(self):
+        # Records written while the section existed keep it. An extra heading
+        # is tolerated in any state, and nothing special-cases its name.
+        for state in ("Draft", "Accepted"):
+            with self.subTest(state=state):
+                self.record(1, front_matter(state=state) + LEFT_OVER_PROMOTION_BODY, slug="b")
+                self.index()
+                self.assertEqual(self.errors(), [])
 
     def test_an_indented_heading_is_not_canonical(self):
         self.record(1, front_matter() + BODY.replace("## Decision", "  ## Decision"))
@@ -386,8 +395,8 @@ class Headings(CorpusCase):
         self.assertIn("missing heading '## Decision'", self.errors())
 
     def test_heading_must_be_canonical(self):
-        self.record(1, front_matter(state="Draft") + DRAFT_BODY.replace("## Promotion", "## Promotion:"))
-        self.assertIn("Draft record needs '## Promotion'", self.errors())
+        self.record(1, front_matter() + BODY.replace("## References", "## References:"))
+        self.assertIn("missing heading '## References'", self.errors())
 
 
 class Graph(CorpusCase):
@@ -921,7 +930,7 @@ class Index(CorpusCase):
         self.assertIn("index is missing; run `drs.py index`", self.errors())
 
     def test_live_rows_show_their_state(self):
-        self.record(1, front_matter(state="Draft") + DRAFT_BODY, slug="draft")
+        self.record(1, front_matter(state="Draft") + LEFT_OVER_PROMOTION_BODY, slug="draft")
         self.record(2, front_matter(id="DR-0002", title="Second") + BODY, slug="second")
         text = self.index()
         live = text.split("## Live", 1)[1]
@@ -953,7 +962,7 @@ class NewRecord(CorpusCase):
         # scaffold defaults to the common case and Draft is a deliberate
         # choice about a decision reality has not tested yet.
         self.assertIn('state: "Accepted"', text)
-        self.assertIn("## Promotion", text)
+        self.assertNotIn("## Promotion", text)
 
     def test_the_scaffold_loads_and_lacks_only_what_it_cannot_know(self):
         # A scaffold is deliberately incomplete in exactly two ways: the summary

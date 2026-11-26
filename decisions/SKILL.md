@@ -116,17 +116,11 @@ strings:
 ## Alternatives Considered
 ### Do Nothing
 ## References
-## Promotion
 ```
 
 Five top-level sections, `### Do Nothing` as a required subsection of the
-fourth, and `## Promotion` on drafts. They are `##` because the record is
-the document; they appear below as `###` only because this file is
-discussing them.
-
-`## Promotion` is required on a `Draft` and permitted on any later state: a
-promoted draft keeps the section, because the criteria it names are the
-evidence of what the draft was betting on.
+fourth. They are `##` because the record is the document; they appear below
+as `###` only because this file is discussing them.
 
 `check` compares these lines literally, so a variant — `## References:`, a
 different case, a setext underline — is a finding, and the fix is the canonical
@@ -292,17 +286,6 @@ everything that later cited it. Never open an accepted record to add a
 backlink; it records a relation about a different record's decision, not a
 change to this one.
 
-### Promotion
-
-A Draft record names, in this section, the **observable** criteria that
-would promote it to Accepted: what has to be exercised, measured, or
-demonstrated. "Wait and see" is not a criterion; "no unscheduled channel
-joins occur over a month of real use" is.
-
-If the repository has a tracker, file the promotion work so it cannot be
-forgotten. A provisional decision with no path to promotion is an
-unrecorded decision wearing a draft's clothes.
-
 ## Lifecycle
 
 Five states, and a closed list of what a record may change once it is
@@ -319,21 +302,31 @@ accepted:
 There is no fifth case. In particular, an accepted record's Decision is
 never revised to describe what the project later did.
 
-| State        | Meaning                                                       | Leaves via                                       |
-| ------------ | ------------------------------------------------------------- | ------------------------------------------------ |
-| `Draft`      | Decided in principle; reality has not tested it yet.          | Promotion to `Accepted`, or supersession.        |
-| `Accepted`   | Decided and binding.                                          | Amendment, deprecation, or supersession.         |
-| `Amended`    | Accepted and binding, with a compatible change made in place. | Further amendment, deprecation, or supersession. |
-| `Deprecated` | No longer applicable, with no replacement.                    | Nothing; it is historical.                       |
-| `Superseded` | Over-ridden by a later record.                                | Nothing; read the record `status.by` names.      |
+| State        | Meaning                                                       | Leaves via                                                    |
+| ------------ | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| `Draft`      | Ratified, and reality has not tested it yet.                  | Acceptance once the uncertainty is resolved, or supersession. |
+| `Accepted`   | Decided and binding.                                          | Amendment, deprecation, or supersession.                      |
+| `Amended`    | Accepted and binding, with a compatible change made in place. | Further amendment, deprecation, or supersession.              |
+| `Deprecated` | No longer applicable, with no replacement.                    | Nothing; it is historical.                                    |
+| `Superseded` | Over-ridden by a later record.                                | Nothing; read the record `status.by` names.                   |
 
 `Amended` is still accepted and binding, so it can be deprecated like any
 other live record: correcting one clause does not make the rest of a record
 harder to retire.
 
-Promotion is a state transition: `Draft` → `Accepted`, with the
-`## Promotion` section left as written — it is the evidence, and deleting
-it deletes the record of what the draft was betting on.
+Promotion is a state transition: `Draft` → `Accepted`, changing the
+`status` block and nothing else. The record already says what was decided;
+promotion says the uncertainty that made it a draft is gone.
+
+There is no promotion section, and a record that still has one is fine — an
+extra heading is not a finding. A required section was rejected because it made
+the audit certify that a draft named observable criteria when all it had seen
+was a heading, and in use it meant "the pull request is reviewed" more often
+than it meant anything about reality. What would settle a decision belongs in
+Decision or Consequences as the prose it is; if the decision is a testable bet,
+put the follow-up in the tracker if the repository has one. A provisional
+decision nobody revisits is an unrecorded decision wearing a draft's clothes,
+and the remedy is a tracked item, not a section nobody fills in.
 
 ### The amend-or-supersede test
 
@@ -454,8 +447,8 @@ python3 scripts/drs.py check --strict  # fail on tolerated findings too
   supersession edge is checked in both directions, and **only** that edge
   is: amendments and deprecations name a justifying record in
   `status.by`, but nothing replaces them, so their edges have no mirror;
-- every required heading is present, `## Promotion` is present on every
-  `Draft`, and its presence is accepted in any other state;
+- every required heading is present, and no `## Promotion` section is
+  expected or special-cased;
 - the relative links written *inside* each record's body resolve;
 - the index is current and complete;
 - near-duplicate titles among live records are flagged for a human.
@@ -473,10 +466,9 @@ The heading checks compare whole lines as exact strings. That is
 deliberate: they can report a missing section and cannot report a content
 defect they did not see. The cost is that a valid variant heading will not
 match, so the corpus must use the canonical headings given in *Record
-anatomy* — a variant is a finding, not a false positive. Anything subtler
-— is this section substantive? does this Draft name criteria reality could
-test? — is out of scope, because a check that guesses is a check that
-lies.
+anatomy* — a variant is a finding, not a false positive. Anything subtler —
+is this section substantive? — is out of scope, because a check that guesses
+is a check that lies.
 
 It also cannot see references *into* a record. The link check reads each
 record's outbound links and nothing else, so a spec, an instruction file, a
@@ -487,9 +479,9 @@ broke.
 
 It cannot verify the things that matter most: whether the reasoning is
 honest, whether an amendment was really compatible, whether the
-alternatives were considered or invented afterwards, whether a Draft
-names promotion criteria reality could ever test. Those stay with you,
-and a clean `check` is not evidence of a good record set.
+alternatives were considered or invented afterwards, whether a `Draft` is
+really still uncertain. Those stay with you, and a clean `check` is not
+evidence of a good record set.
 
 **The index is generated, committed, and checked.** Commit it with the
 records it describes: the new one-liner then appears in the pull request

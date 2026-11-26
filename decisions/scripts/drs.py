@@ -52,7 +52,6 @@ REQUIRED_HEADINGS = (
 # A subsection of "## Alternatives Considered", not a section of its own: the
 # canonical-heading check encodes that nesting, so this must stay ###.
 DO_NOTHING_HEADING = "### Do Nothing"
-PROMOTION_HEADING = "## Promotion"
 
 # --strict promotes these warning kinds to errors. It deliberately does not
 # touch `legacy` (bodies the protocol forbids rewriting, so the warning is
@@ -710,18 +709,6 @@ def check_record(record: Record, corpus: Corpus) -> list[Finding]:
             )
         else:
             out.append(Finding("error", where, f"missing heading {heading!r}"))
-    if state == "Draft" and PROMOTION_HEADING not in headings:
-        if legacy:
-            out.append(
-                Finding(
-                    "warning",
-                    where,
-                    f"missing heading {PROMOTION_HEADING!r} (legacy_bodies)",
-                    kind="legacy",
-                )
-            )
-        else:
-            out.append(Finding("error", where, f"Draft record needs {PROMOTION_HEADING!r}"))
 
     slug = SLUG_RE.match(record.rel.stem)
     dated = DATE_PREFIX_RE.match(record.rel.stem)
@@ -966,8 +953,6 @@ def _needs_legacy_exemption(record: Record) -> bool:
     if any(heading not in headings for heading in REQUIRED_HEADINGS):
         return True
     if DO_NOTHING_HEADING not in headings:
-        return True
-    if record.state == "Draft" and PROMOTION_HEADING not in headings:
         return True
     slug = SLUG_RE.match(record.rel.stem)
     if slug is None:

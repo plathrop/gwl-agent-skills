@@ -63,7 +63,7 @@ Front matter in a deliberately small YAML subset — flat scalars, one nested
 `status` mapping, sequences of scalars in any shape a formatter emits (flow,
 wrapped flow with a trailing comma, or block) — with states `Draft`, `Accepted`,
 `Amended`, `Deprecated`, `Superseded`, and a body of five sections plus
-`### Do Nothing` and (on drafts) `## Promotion`.
+`### Do Nothing`.
 
 Two rules do most of the work:
 
@@ -103,6 +103,11 @@ which replaced which.
 `Draft` plus observable criteria (and, where a tracker exists, a tracked item
 for the promotion work) makes provisional decisions honest and keeps them from
 becoming permanent by inattention.
+
+*Editor's note (2026-11-26): the criteria half did not survive. `Draft` alone
+fixed the overclaiming it was written for; the required section made the audit
+certify criteria it had never read, and in use it meant "the pull request is
+reviewed". See the end of this section.*
 
 **The bidirectional edge, scoped to supersession.** Requiring every
 `status.by` to mirror into a `supersedes` rejects correctly amended and
@@ -225,6 +230,33 @@ position here was that a repository where nothing gets ratified does not need
 records; the correction is that a solo repository ratifies with one signature,
 which is a weaker claim but a true one, and worth having on the record.
 
+**No promotion section (2026-11-26).** `## Promotion` was required on every
+`Draft`, and the requirement could only ever be checked as far as a heading:
+`check` can see `## Promotion` and cannot see whether the criteria beneath it
+are observable, so the audit was certifying precisely the thing its own
+doctrine says a check must never guess at. The reading that made it mean "the
+pull request is reviewed" came from reasoning *about* the requirement —
+gwl-systems' losing alternative, flint's two-kinds reconciliation — never from
+content.
+
+Not one was ever written: across three adoptions and 29 records there is no
+`## Promotion` section anywhere. That is evidence of **non-use, not of
+failure** — neither adopting corpus holds a `Draft` record at all, so there was
+no draft to write one for — and the case for removal does not lean on it. What
+the count shows is that a required section bought nothing; what the reasoning
+shows is what it degenerated into once anyone thought about it.
+
+The risk it was meant to prevent — a provisional decision becoming permanent by
+inattention — is real, and its answer is the one the protocol already uses
+elsewhere: say what would settle the decision where the decision is stated, and
+put the follow-up in the tracker if there is one.
+
+What was rejected: the two repairs that would have kept the section — making it
+optional on `Draft`, or keeping it required and having `check` verify only that
+the heading exists. Both keep the audit asserting what it cannot know, and the
+second is what was actually shipping. A record written while the section existed
+keeps it; an extra heading is not a finding.
+
 ## What `check` cannot do
 
 It verifies structure: ids, states, edges, headings, links, index freshness,
@@ -260,8 +292,8 @@ instructions that are often immutable by convention.
 
 - [`orient`](../orient/) discovers decision records during its pass; when this
   skill is installed it should defer to it for the reading protocol.
-- [`pebble`](../pebble/) carries the work that produces decisions, and the
-  promotion work for drafts.
+- [`pebble`](../pebble/) carries the work that produces decisions, and whatever
+  follow-up a draft's uncertainty needs.
 - [`worktrees`](../worktrees/) decides where the record is written. A record
   and the change that implements it belong in the same branch, so the
   citation and the code land together.

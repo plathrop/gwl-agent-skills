@@ -23,5 +23,3 @@ supersedes: []
 ### Do Nothing
 
 ## References
-
-## Promotion
