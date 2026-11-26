@@ -22,7 +22,7 @@ somebody ratifies, in repositories that have reviews.
 | [`references/writing.md`](references/writing.md) | Depth for drafting: worked good/bad examples per section, how to write a summary line and a rubric record, how to write an amendment justification.           |
 | [`assets/template.md`](assets/template.md)       | What `drs.py new` copies.                                                                                                                                     |
 | [`scripts/drs.py`](scripts/drs.py)               | `new`, `index`, `check`. Python 3.11+, standard library only.                                                                                                 |
-| [`tests/test_drs.py`](tests/test_drs.py)         | 107 tests, stdlib `unittest`.                                                                                                                                 |
+| [`tests/test_drs.py`](tests/test_drs.py)         | Test suite, stdlib `unittest`.                                                                                                                                |
 
 ## Setup
 
