@@ -71,7 +71,10 @@ def front_matter(
         f'  state: "{state}"',
     ]
     if by:
-        lines.append(f'  by: "{by}"')
+        if isinstance(by, (list, tuple)):
+            lines.append("  by: [" + ", ".join(f'"{item}"' for item in by) + "]")
+        else:
+            lines.append(f'  by: "{by}"')
     if status_date:
         lines.append(f'  date: "{status_date}"')
     lines.append(f"supersedes: {supersedes}")
@@ -232,6 +235,39 @@ class FrontMatterDialect(CorpusCase):
         with self.assertRaises(drs.FrontMatterError) as caught:
             self.parse(["legacy_bodies:", "  -"])
         self.assertIn("empty sequence item", str(caught.exception))
+
+    def test_a_flow_sequence_inside_status_parses(self):
+        # `status.by` may name several records: one decision split across
+        # several successors. The other status fields stay scalar.
+        parsed = self.parse(
+            ["status:", '  state: "Superseded"', '  by: ["DR-0011", "DR-0012"]']
+        )
+        self.assertEqual(parsed["status"]["by"], ["DR-0011", "DR-0012"])
+
+    def test_a_wrapped_flow_sequence_inside_status_parses(self):
+        parsed = self.parse(
+            [
+                "status:",
+                '  state: "Superseded"',
+                "  by: [",
+                '    "DR-0011",',
+                '    "DR-0012",',
+                "  ]",
+            ]
+        )
+        self.assertEqual(parsed["status"]["by"], ["DR-0011", "DR-0012"])
+
+    def test_a_block_sequence_inside_status_parses(self):
+        parsed = self.parse(
+            [
+                "status:",
+                '  state: "Superseded"',
+                "  by:",
+                '    - "DR-0011"',
+                '    - "DR-0012"',
+            ]
+        )
+        self.assertEqual(parsed["status"]["by"], ["DR-0011", "DR-0012"])
 
     def test_unclosed_front_matter_rejected(self):
         with self.assertRaises(drs.FrontMatterError):
@@ -515,6 +551,116 @@ class Graph(CorpusCase):
         self.assertTrue(any("has this already been decided" in w for w in self.warnings()))
 
 
+class SplitSupersession(CorpusCase):
+    """One record replaced by several: a decision split in order to supersede it.
+
+    DR-0003 decided three things; DR-0011 and DR-0012 each carry one, and
+    DR-0003 names both. Every test here starts from that valid shape and breaks
+    one edge of it.
+    """
+
+    def split(self, causes=("DR-0011", "DR-0012"), back=("DR-0003", "DR-0003")):
+        self.record(
+            3,
+            front_matter(id="DR-0003", title="Three Parts", state="Superseded", by=list(causes))
+            + BODY,
+            slug="three-parts",
+        )
+        for number, slug, listed in zip((11, 12), ("part-one", "part-two"), back):
+            supersedes = f'["{listed}"]' if listed else "[]"
+            self.record(
+                number,
+                front_matter(id=f"DR-00{number}", supersedes=supersedes) + BODY,
+                slug=slug,
+            )
+
+    def test_a_split_supersession_passes(self):
+        self.split()
+        self.index()
+        self.assertEqual(self.errors(), [])
+
+    def test_every_successor_must_name_the_old_record_back(self):
+        # The split applied to one successor and not the other.
+        self.split(back=("DR-0003", None))
+        self.assertIn(
+            "Superseded by DR-0012, which does not list DR-0003 in supersedes",
+            self.errors(),
+        )
+
+    def test_the_old_record_must_name_every_successor(self):
+        # The other direction: a successor that claims the old decision while
+        # the old record points only at its sibling.
+        self.split(causes=("DR-0011",))
+        self.assertTrue(
+            any("which does not name DR-0012" in e for e in self.errors()), self.errors()
+        )
+
+    def test_a_cause_listed_twice_is_reported(self):
+        self.split(causes=("DR-0011", "DR-0011"))
+        self.assertTrue(
+            any("status.by lists DR-0011 more than once" in e for e in self.errors()),
+            self.errors(),
+        )
+
+    def test_only_a_superseded_record_may_name_several_causes(self):
+        self.split()
+        self.record(
+            13,
+            front_matter(id="DR-0013", state="Amended", by=["DR-0011", "DR-0012"]) + BODY,
+            slug="amended",
+        )
+        self.assertTrue(
+            any("split supersession, not an amendment" in e for e in self.errors()),
+            self.errors(),
+        )
+
+    def test_a_deprecated_record_may_not_name_several_either(self):
+        self.record(
+            3,
+            front_matter(id="DR-0003", state="Deprecated", by=["DR-0011", "DR-0012"]) + BODY,
+            slug="three-parts",
+        )
+        self.assertTrue(
+            any("only Superseded may" in e for e in self.errors()), self.errors()
+        )
+
+    def test_a_nested_sequence_in_a_cause_is_reported(self):
+        # One level of sequence is the dialect's limit; a list of lists is a
+        # malformed field, not a shape to normalize.
+        self.record(
+            3,
+            front_matter(id="DR-0003", state="Superseded") + BODY,
+            slug="three-parts",
+        )
+        path = self.dir / "0003-three-parts.md"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                'status:\n  state: "Superseded"',
+                'status:\n  state: "Superseded"\n  by: [["DR-0011"]]',
+            ),
+            encoding="utf-8",
+        )
+        self.assertIn(
+            "status.by must be a scalar or a sequence of scalars", self.errors()
+        )
+
+    def test_a_cause_that_does_not_resolve_is_named(self):
+        self.split(causes=("DR-0011", "DR-0099"))
+        self.assertIn("status.by DR-0099 does not resolve", self.errors())
+
+    def test_a_split_cycle_is_caught(self):
+        self.record(3, front_matter(id="DR-0003", state="Superseded", by=["DR-0011"]) + BODY, slug="three-parts")
+        self.record(
+            11,
+            front_matter(id="DR-0011", state="Superseded", by=["DR-0003"], supersedes='["DR-0003"]')
+            + BODY,
+            slug="part-one",
+        )
+        self.assertTrue(
+            any("status.by cycle" in e for e in self.errors()), self.errors()
+        )
+
+
 class LegacyBodies(CorpusCase):
     LEGACY = front_matter(
         legacy_bodies='["DR-0001"]',
@@ -786,6 +932,37 @@ class Index(CorpusCase):
         self.assertFalse(
             any("link differs" in error for error in self.errors()), self.errors()
         )
+
+    def test_a_split_supersession_is_three_ordinary_rows(self):
+        # The index never carried the supersession edge -- a Superseded row
+        # says only "Superseded" -- so a split needs no column and no section of
+        # its own. What it must not do is lose a successor or list the old
+        # record as live.
+        self.record(
+            3,
+            front_matter(
+                id="DR-0003", title="Three Parts", state="Superseded", by=["DR-0011", "DR-0012"]
+            )
+            + BODY,
+            slug="three-parts",
+        )
+        self.record(
+            11,
+            front_matter(id="DR-0011", title="Part One", supersedes='["DR-0003"]') + BODY,
+            slug="part-one",
+        )
+        self.record(
+            12,
+            front_matter(id="DR-0012", title="Part Two", supersedes='["DR-0003"]') + BODY,
+            slug="part-two",
+        )
+        text = self.index()
+        self.assertEqual(self.errors(), [])
+        live, historical = text.split("## Live", 1)[1].split("## Historical", 1)
+        self.assertIn("[DR-0011]", live)
+        self.assertIn("[DR-0012]", live)
+        self.assertNotIn("[DR-0003]", live)
+        self.assertIn("[DR-0003]", historical)
 
     def test_a_pipe_in_a_legacy_filename_round_trips(self):
         # Legal on disk, illegal in a table cell unless escaped. The legacy

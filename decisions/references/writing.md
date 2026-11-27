@@ -162,6 +162,30 @@ being right:
 > seconds. The events are still the source of truth for the audit log, so this
 > record reverts the storage decision without discarding the history.
 
+### Splitting a record
+
+When the old record decided several things and the decision moved on two of
+them, the successors each carry one clause, and together they have to
+reconstruct the reasoning the old record held. The old body stays where it is;
+what each successor carries in its Alternatives is the old record's position on
+*that* clause.
+
+> **DR-0020 — Event storage.** Append events and fold them. It replaces the
+> storage clause of DR-0001, which chose synchronous writes because the fold
+> was cheap at the time; the fold is now eleven seconds, and that is the
+> specific reason the clause stopped being right.
+>
+> **DR-0021 — Query path.** Reads are served from a projection, rebuilt from
+> the event log. It carries DR-0001's read-path clause, which assumed the
+> same table served reads and writes; the projection is what makes DR-0020's
+> folds cheap enough to keep.
+
+The test that a split is complete: a reader holding only the successors should
+be unable to re-propose anything the old record had already rejected. A clause
+that landed in no successor takes its reasoning with it, and the next person
+argues for it again. A clause that landed in two successors leaves the pair
+free to drift apart, which is the multi-decision record rebuilt one level up.
+
 ## What not to write
 
 - **A decision you have already implemented and cannot reasonably revisit.**

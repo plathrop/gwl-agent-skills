@@ -97,7 +97,8 @@ gap to be filled.
 One record, one decision. If three choices are tangled together, write
 three records and cross-reference them. A record that decides several
 things can only be amended or superseded as a unit, which is how records
-end up carrying stale clauses.
+end up carrying stale clauses — and when the decision moves, splitting it
+into several successors is the repair (see *Superseding a record*).
 
 A **rubric** — a rule for deciding rather than a decision about one case
 — is in scope and deserves a record of its own. A default with a bounded
@@ -169,7 +170,7 @@ supersedes: []
 | `authors`       | always                                                 | Who reasoned it out. Name a model by model id when a model drafted it.                                                                                                                                                   |
 | `reviewers`     | always                                                 | Who ratified it. An agent may author a record; a human ratifies it. Never empty on a committed record: a record nobody ratified is not a record yet, so it lives in the pull request and merging it is the ratification. |
 | `status.state`  | always                                                 | `Draft`, `Accepted`, `Amended`, `Deprecated`, or `Superseded`.                                                                                                                                                           |
-| `status.by`     | when state is `Amended`, `Deprecated`, or `Superseded` | The id of the record that caused the **current** state.                                                                                                                                                                  |
+| `status.by`     | when state is `Amended`, `Deprecated`, or `Superseded` | The record that caused the **current** state: one id, or a list when a supersession split the decision. Only `Superseded` may name more than one.                                                                        |
 | `status.date`   | optional                                               | When the state changed. Omitted means "same as `date`, or recoverable from git".                                                                                                                                         |
 | `supersedes`    | when this record supersedes anything                   | The ids it replaces.                                                                                                                                                                                                     |
 | `legacy_bodies` | on an adoption record                                  | Ids whose bodies predate this section format. Demotes their heading and filename checks to warnings; changes nothing else.                                                                                               |
@@ -182,8 +183,17 @@ because a trimmed cell would show something the record does not say.
 per state the record has ever been in. A record can change state more than
 once — amended, then deprecated — and the field holds the latest cause.
 Earlier transitions are not lost: they are in git, and in the References of
-the records that caused them. Do not grow a history list here; it would
-duplicate git and then drift from it.
+the records that caused them.
+
+Do not grow a history list here, and the reason generalizes: a field holds
+what the record **is**, not a copy of what git already records about how it
+got there. A copy drifts from the original, and the original is the one that
+can be checked.
+
+A sequence of ids is not that, and the distinction is the whole point.
+Several ids in one `status.by` are causes that hold at the same moment — one
+decision now carried by several records — which is a fact about the present
+that git cannot express at all.
 
 `authors` and `reviewers` are claims, like a commit author. They are worth
 recording because provenance of *reasoning* is different from provenance
@@ -280,8 +290,9 @@ builds on or replaces, external documentation. Keep it tight; a link and
 five words beats a paragraph.
 
 **An amendment or a supersession always has a reverse edge** —
-`status.by` on the record it changes — and that edge is required. A
-build-on citation is forward-only: a record does not accumulate a list of
+`status.by` on the record it changes — and that edge is required, one per
+successor when a record was split. A build-on citation is forward-only: a
+record does not accumulate a list of
 everything that later cited it. Never open an accepted record to add a
 backlink; it records a relation about a different record's decision, not a
 change to this one.
@@ -308,7 +319,7 @@ never revised to describe what the project later did.
 | `Accepted`   | Decided and binding.                                          | Amendment, deprecation, or supersession.                      |
 | `Amended`    | Accepted and binding, with a compatible change made in place. | Further amendment, deprecation, or supersession.              |
 | `Deprecated` | No longer applicable, with no replacement.                    | Nothing; it is historical.                                    |
-| `Superseded` | Over-ridden by a later record.                                | Nothing; read the record `status.by` names.                   |
+| `Superseded` | Over-ridden by a later record.                                | Nothing; read the record(s) `status.by` names.                |
 
 `Amended` is still accepted and binding, so it can be deprecated like any
 other live record: correcting one clause does not make the rest of a record
@@ -378,7 +389,8 @@ leave the status alone. If a formatting pass would rewrite what a clause
    old position, because that is the reasoning a reader will otherwise
    lose.
 2. **Set the old record's status** to `Superseded` with `status.by` the
-   new id and `status.date` the supersession date.
+   new id — or, when the decision was split, every successor's id — and
+   `status.date` the supersession date.
 3. **Change nothing else in the old record.** Not its Decision, not its
    Consequences, not its title. It records what was decided then, and it
    stays that way.
@@ -386,6 +398,33 @@ leave the status alone. If a formatting pass would rewrite what a clause
    defect this rule exists to prevent — the orphaned record still claims
    to be live, and the only person who could fix it has moved on.
 5. Run `scripts/drs.py index` and commit both records and the index.
+
+### Splitting a record into several successors
+
+A record that decides three things can be replaced by three records that each
+carry one. `status.by` takes a list for exactly this: the old record names
+every successor, and every successor lists the old record in `supersedes`.
+
+1. **Write each successor** for one clause, with its own Decision and
+   Consequences, and the old record's position on *that clause* in its
+   Alternatives.
+2. **Wire both directions on every edge**: the old record's `status.by` names
+   all the successors, each successor's `supersedes` names the old record, and
+   all of it lands in one commit. A split applied to one successor and not the
+   other is a half-applied supersession.
+3. **Account for every clause.** Each clause of the old Decision lands in
+   exactly one successor: none dropped, none living in two records. Nothing
+   mechanical can check this — it is an obligation, and it is the one that
+   keeps a split from losing the reasoning it was made to preserve.
+
+A split is a supersession, not an amendment: `Amended` and `Deprecated` name
+one cause, and a change that would need several is a decision that moved.
+
+The alternative is one successor that restates every clause, changed and
+unchanged. That is legal and often right — one clause moving, or two that are
+not separable. Reach for the split when the surviving clauses are substantial:
+the absorbing record then decides several things itself, and the next reversal
+of any one of them pays the same restatement again.
 
 Reissuing a record to change one clause is expensive: it forces restating
 unchanged reasoning, several pages of it, to alter a sentence. That cost
@@ -405,7 +444,10 @@ decision itself moved.
    supersession is part of the decision, not a footnote to it — an
    amended record cannot be read honestly without the hop, and a
    superseded one should not be read at all until you know what replaced
-   it. A `Draft` has no `status.by`; there is nothing to follow.
+   it. A `Draft` has no `status.by`; there is nothing to follow. When it
+   names several, follow all of them: a split supersession has no single
+   successor, and reading one part as if it were the whole replacement is
+   how a surviving clause gets lost.
 4. **Read `Do Nothing`.** It usually holds the real argument.
 
 If a record contradicts what you are about to build, you have found
@@ -442,11 +484,15 @@ python3 scripts/drs.py check --strict  # fail on tolerated findings too
   when the state requires it — one set on an `Accepted` or `Draft` record is
   reported as junk metadata, which `--strict` turns into an error;
 - each id in a record's `supersedes` resolves to a record in `Superseded`
-  state whose `status.by` names that record — and every `Superseded`
-  record is listed in the `supersedes` of the record naming it. The
-  supersession edge is checked in both directions, and **only** that edge
-  is: amendments and deprecations name a justifying record in
-  `status.by`, but nothing replaces them, so their edges have no mirror;
+  state whose `status.by` names that record — and every cause a `Superseded`
+  record names is listed in the `supersedes` of the record naming it. The
+  supersession edge is checked in both directions and on every edge of a
+  split, and **only** that edge is: amendments and deprecations name a
+  justifying record in `status.by`, but nothing replaces them, so their edges
+  have no mirror. Supersession is a relation, not a function — one record may
+  replace several, and one may be replaced by several — so `status.by`
+  accepts a single id or a list, and only `Superseded` may name more than
+  one;
 - every required heading is present, and no `## Promotion` section is
   expected or special-cased;
 - the relative links written *inside* each record's body resolve;

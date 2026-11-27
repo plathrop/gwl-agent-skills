@@ -257,11 +257,45 @@ the heading exists. Both keep the audit asserting what it cannot know, and the
 second is what was actually shipping. A record written while the section existed
 keeps it; an extra heading is not a finding.
 
+**Supersession is a relation, not a function (2026-11-27).** `status.by` was a
+single id, and the audit enforced the supersession edge as an equality in both
+directions, so replacement was a function: many records could become one —
+`supersedes` was already a list — but one could never become several. The gap
+opened where two features meet. Adoption freezes legacy bodies, so a legacy
+record that decides three things cannot be pre-emptively split; when two of its
+clauses reverse and one survives, the only legal move was a single successor
+absorbing all three, which re-creates the multi-decision record the protocol
+forbids and repeats the restatement at the next reversal.
+
+`status.by` now takes a single id or a sequence, and only `Superseded` may name
+more than one: a split is a supersession, not an amendment, and `Amended` and
+`Deprecated` keep exactly one cause. The dialect change is a strict superset,
+so no adopter's records moved and no index needed regenerating.
+
+What was rejected, first: relaxing only the check, so that a successor need
+merely be named by *some* record. It passes, and it is worse — the record that
+needs the pointer keeps a single one, so half of a split's successors are
+invisible to anyone who follows the edge, which is the failure the
+bidirectional edge was introduced to prevent.
+
+What was rejected, second: naming the successors in the index. The index has
+never carried the supersession edge — a `Superseded` row says only
+`Superseded`, and the reader opens the record — and a split leaves every
+per-record invariant the index does check intact. A column would have been paid
+for on every row to shorten four or five hops on a handful, so the split's
+shape lives in front matter, where the reading protocol already sends you. The
+one thing the index must keep doing is what it already does: list each of the
+three records once, in the right section.
+
+The obligation a split creates and no check can see: every clause of the old
+Decision lands in exactly one successor, none dropped and none duplicated.
+
 ## What `check` cannot do
 
 It verifies structure: ids, states, edges, headings, links, index freshness,
 duplicate-looking titles. It cannot tell you whether the reasoning is honest,
-whether an amendment was really compatible, or whether the alternatives were
+whether an amendment was really compatible, whether every clause of a split
+record landed in exactly one successor, or whether the alternatives were
 considered rather than reconstructed afterwards. A clean `check` means the
 corpus is internally consistent, not that it is good. `SKILL.md` says so in as
 many words, and it should stay that way.

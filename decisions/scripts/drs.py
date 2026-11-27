@@ -273,8 +273,10 @@ def parse_front_matter(lines: list[str], path: Path) -> dict:
 
     A sequence may be written as a flow list (`["a", "b"]`) or a block list
     (`- "a"` lines), and a flow list may be wrapped across lines with a trailing
-    comma — those are the two shapes YAML formatters emit, and a dialect that
+    comma — those are the shapes YAML formatters emit, and a dialect that
     accepted only the first would fail on any record a formatter had touched.
+    The same shapes are accepted for a value inside the `status` mapping, which
+    is where a split supersession writes `status.by` as a list.
     Multiline strings, anchors, tags, and nested mappings beyond `status` stay
     out of the dialect.
 
@@ -301,6 +303,17 @@ def parse_front_matter(lines: list[str], path: Path) -> dict:
             key = key.strip()
             if key in data[nested_key]:
                 raise FrontMatterError(f"{where}: duplicate key {key!r} in {nested_key}")
+            value = raw.strip()
+            if not value:
+                if index + 1 < len(lines) and lines[index + 1].strip().startswith("-"):
+                    items, index = _collect_block_sequence(lines, index, where)
+                    data[nested_key][key] = items
+                    continue
+                raise FrontMatterError(f"{where}: {key!r} needs a value")
+            if value.startswith("["):
+                collected, index = _collect_flow(value, lines, index, where)
+                data[nested_key][key] = parse_scalar(collected, where)
+                continue
             data[nested_key][key] = parse_scalar(raw, where)
             continue
 
@@ -401,12 +414,25 @@ class Record:
 
     @property
     def status(self) -> dict:
-        """The status mapping, or {} when it is not a mapping of strings."""
+        """The status mapping, or {} when it is not a mapping of scalars.
+
+        `by` is the one field whose value may also be a sequence of scalars,
+        because a split supersession names several causes. Anything else makes
+        the whole mapping malformed, so the validator reports it rather than a
+        normalized guess being read as data.
+        """
         status = self.front.get("status")
         if not isinstance(status, dict):
             return {}
-        if not all(isinstance(key, str) and isinstance(value, str) for key, value in status.items()):
-            return {}
+        for key, value in status.items():
+            if not isinstance(key, str):
+                return {}
+            if key == "by" and isinstance(value, list):
+                if all(isinstance(item, str) for item in value):
+                    continue
+                return {}
+            if not isinstance(value, str):
+                return {}
         return dict(status)
 
     @property
@@ -414,8 +440,21 @@ class Record:
         return self.status.get("state", "")
 
     @property
-    def by(self) -> str | None:
-        return self.status.get("by")
+    def by_ids(self) -> list[str]:
+        """The records that caused the current state, in written order.
+
+        A scalar normalizes to a one-element list. A sequence is a split
+        supersession: one record replaced by several, each carrying part of
+        what the old one decided. There is deliberately no single-value
+        accessor — a caller that can only see one cause cannot represent the
+        split, which is the defect this field's shape exists to prevent.
+        """
+        value = self.status.get("by")
+        if isinstance(value, str):
+            return [value] if value else []
+        if isinstance(value, list) and all(isinstance(item, str) for item in value):
+            return [item for item in value if item]
+        return []
 
     @property
     def supersedes(self) -> list[str]:
@@ -595,10 +634,22 @@ def check_record(record: Record, corpus: Corpus) -> list[Finding]:
             )
     if "status" in front and not isinstance(front["status"], dict):
         out.append(Finding("error", where, "status must be a block mapping"))
-    elif "status" in front and not all(
-        isinstance(value, str) for value in front["status"].values()
-    ):
-        out.append(Finding("error", where, "status values must be scalars"))
+    elif "status" in front:
+        for key, value in front["status"].items():
+            # `by` is the one field that may name more than one record: a split
+            # supersession replaces one decision with several. Every other
+            # field, and every other value, is a scalar.
+            if key == "by" and isinstance(value, list):
+                if not all(isinstance(item, str) for item in value):
+                    out.append(
+                        Finding(
+                            "error",
+                            where,
+                            "status.by must be a scalar or a sequence of scalars",
+                        )
+                    )
+            elif not isinstance(value, str):
+                out.append(Finding("error", where, "status values must be scalars"))
 
     match = ID_RE.match(record.id)
     if "id" not in front:
@@ -672,9 +723,9 @@ def check_record(record: Record, corpus: Corpus) -> list[Finding]:
             Finding("error", where, f"status.state {state!r} is not one of {', '.join(STATES)}")
         )
     needs_by = state in NEEDS_BY
-    if needs_by and not record.by:
+    if needs_by and not record.by_ids:
         out.append(Finding("error", where, f"{state} record needs status.by naming its cause"))
-    elif not needs_by and record.by:
+    elif not needs_by and "by" in record.status:
         # Junk metadata rather than a wrong decision: nothing reads it, nothing
         # is misrepresented. Tolerated by default, fatal under --strict.
         out.append(
@@ -683,6 +734,16 @@ def check_record(record: Record, corpus: Corpus) -> list[Finding]:
                 where,
                 f"status.by is set on a record in state {state}, where it means nothing",
                 kind="lint",
+            )
+        )
+    if state in STATES and state != "Superseded" and len(record.by_ids) > 1:
+        out.append(
+            Finding(
+                "error",
+                where,
+                f"status.by names {len(record.by_ids)} records, but only Superseded may: "
+                "one decision replaced by several is a split supersession, not an "
+                "amendment or a deprecation",
             )
         )
 
@@ -798,11 +859,24 @@ def check_graph(corpus: Corpus) -> list[Finding]:
 
     for record in corpus.records:
         where = str(record.rel)
-        if record.by and record.by not in ids:
-            out.append(Finding("error", where, f"status.by {record.by} does not resolve"))
-        if record.id and record.by == record.id:
+        for cause in record.by_ids:
+            if cause not in ids:
+                out.append(Finding("error", where, f"status.by {cause} does not resolve"))
+            if record.id and cause == record.id:
+                out.append(
+                    Finding(
+                        "error", where, "status.by names this record; it cannot be its own cause"
+                    )
+                )
+        repeated = sorted({c for c in record.by_ids if record.by_ids.count(c) > 1})
+        if repeated:
             out.append(
-                Finding("error", where, "status.by names this record; it cannot be its own cause")
+                Finding(
+                    "error",
+                    where,
+                    f"status.by lists {', '.join(repeated)} more than once; each cause is "
+                    "named once",
+                )
             )
         if record.id and record.id in record.supersedes:
             out.append(
@@ -822,27 +896,33 @@ def check_graph(corpus: Corpus) -> list[Finding]:
                         "not Superseded",
                     )
                 )
-            if target.by != record.id:
+            if record.id not in target.by_ids:
+                causes = ", ".join(target.by_ids) or "unset"
                 out.append(
                     Finding(
                         "error",
                         where,
-                        f"supersedes {target_id} but {target_id}.status.by is {target.by!r}, "
-                        f"expected {record.id!r}",
+                        f"supersedes {target_id} but {target_id}.status.by is {causes}, "
+                        f"which does not name {record.id}",
                     )
                 )
         if record.state == "Superseded":
-            if not record.by:
-                continue  # already reported by the needs_by rule
-            superseding = corpus.by_id(record.by)
-            if superseding is not None and record.id not in superseding.supersedes:
-                out.append(
-                    Finding(
-                        "error",
-                        where,
-                        f"Superseded by {record.by}, which does not list {record.id} in supersedes",
+            # Every cause is checked, not just the first: a split supersession
+            # applied to one successor and not the other is exactly the
+            # half-applied edge the reverse-edge rule exists to catch.
+            for cause in record.by_ids:
+                superseding = corpus.by_id(cause)
+                if superseding is None:
+                    continue  # already reported as unresolvable
+                if record.id not in superseding.supersedes:
+                    out.append(
+                        Finding(
+                            "error",
+                            where,
+                            f"Superseded by {cause}, which does not list {record.id} in "
+                            "supersedes",
+                        )
                     )
-                )
 
     for record in corpus.records:
         if not record.legacy_bodies:
@@ -885,9 +965,11 @@ def _cycle_findings(corpus: Corpus, ids: dict[str, str]) -> list[Finding]:
     """Reject supersession and cause cycles.
 
     `supersedes` and `status.by` are opposite directions of the same relation —
-    a correct pair is `new.supersedes = [old]` with `old.status.by = new` — so
-    they are walked separately. Merging them into one graph would report every
-    correct supersession as a cycle.
+    a correct pair is a `supersedes` naming old with old's `status.by` naming
+    the successor — so they are walked separately. Merging them into one graph
+    would report every correct supersession as a cycle. Both sides are
+    many-to-many: a record may supersede several (fusion) and be superseded by
+    several (a split).
     """
     # Self-edges are excluded because they already have their own, more
     # specific finding; reporting a one-node "cycle" on top of it is noise.
@@ -899,7 +981,7 @@ def _cycle_findings(corpus: Corpus, ids: dict[str, str]) -> list[Finding]:
         if record.id
     }
     cause = {
-        record.id: [record.by] if record.by in ids and record.by != record.id else []
+        record.id: [by for by in record.by_ids if by in ids and by != record.id]
         for record in corpus.records
         if record.id
     }

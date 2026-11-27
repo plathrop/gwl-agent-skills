@@ -84,6 +84,49 @@ legacy_bodies: [$ids]
 ## References
 EOF
 
+# A split supersession: DR-0005 is replaced by DR-0020 and DR-0021, so its
+# `status.by` is a sequence inside the nested `status` mapping -- a shape only
+# this fixture exercises, and one a YAML formatter is entitled to wrap.
+python3 - "$records/2026-09-05-legacy-05.md" <<'REWRITE'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+split = '  state: "Superseded"\n  by: ["DR-0020", "DR-0021"]\n  date: "2026-11-27"'
+text = text.replace('  state: "Accepted"', split, 1)
+path.write_text(text, encoding="utf-8")
+REWRITE
+
+for n in 20 21; do
+    cat >"$records/00$n-split-part-$n.md" <<EOF
+---
+id: "DR-00$n"
+title: "Split part $n"
+summary: "One clause of the legacy decision, carried forward."
+date: "2026-11-27"
+authors: ["A Human"]
+reviewers: ["A Reviewer"]
+status:
+  state: "Accepted"
+supersedes: ["DR-0005"]
+---
+# Split part $n
+
+## Context
+
+## Decision
+
+## Consequences
+
+## Alternatives Considered
+
+### Do Nothing
+
+## References
+EOF
+done
+
 python3 "$drs" --dir "$records" index >/dev/null
 echo "roundtrip: baseline check"
 python3 "$drs" --dir "$records" check
@@ -99,4 +142,13 @@ fi
 
 echo "roundtrip: check after formatting"
 python3 "$drs" --dir "$records" check
+
+# The split survives the formatter in whatever shape it chose: the check above
+# proves the tool accepted it, and this proves the fixture still holds a split
+# rather than a pair of unrelated decisions.
+if ! grep -q 'DR-0020' "$records/2026-09-05-legacy-05.md"; then
+    echo "roundtrip: FAIL: the split supersession did not survive formatting" >&2
+    exit 1
+fi
+
 echo "roundtrip: ok"
